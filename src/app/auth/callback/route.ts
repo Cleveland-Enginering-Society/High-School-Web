@@ -9,11 +9,16 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next");
 
-  // Handle password recovery - redirect to reset password page
+  // Handle password recovery - redirect to reset password page WITHOUT verifying OTP
+  // This prevents auto-authentication and allows user to set new password
   if (type === "recovery") {
     const redirectTo = request.nextUrl.clone();
     redirectTo.pathname = "/reset-password";
-    // Keep the token parameters for the reset password page
+    // Keep the token_hash and type parameters for the reset password page
+    if (token_hash) {
+      redirectTo.searchParams.set("token_hash", token_hash);
+    }
+    redirectTo.searchParams.set("type", "recovery");
     return NextResponse.redirect(redirectTo);
   }
 

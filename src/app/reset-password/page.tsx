@@ -13,66 +13,178 @@ export default function ResetPasswordPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
   const passwordJustUpdatedRef = useRef(false);
+  const recoveryModeEnteredRef = useRef(false); // Track if we've entered recovery mode
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
 
+  // #region agent log
+  // Log on component mount to see initial URL state
+  if (typeof window !== 'undefined') {
+    const initialLog = {location:'reset-password/page.tsx:18',message:'Component mount - initial URL check',data:{fullUrl:window.location.href,searchParams:window.location.search,hasTokenHash:window.location.search.includes('token_hash')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A,E'};
+    console.log('[DEBUG]', initialLog);
+    fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(initialLog)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+  }
+  // #endregion
+
   useEffect(() => {
+    // #region agent log
+    const logData1 = {location:'reset-password/page.tsx:20',message:'useEffect entry',data:{fullUrl:typeof window!=='undefined'?window.location.href:'SSR',searchParamsKeys:Array.from(searchParams.keys())},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A,E'};
+    console.log('[DEBUG]', logData1);
+    fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData1)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+    // #endregion
+    
     // Check URL parameters for password recovery token
     const tokenHash = searchParams.get('token_hash');
     const type = searchParams.get('type');
 
+    // #region agent log
+    const logData2 = {location:'reset-password/page.tsx:25',message:'URL params extracted',data:{tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,type,hasTokenHash:!!tokenHash,hasType:!!type},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A,E'};
+    console.log('[DEBUG]', logData2);
+    fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData2)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+    // #endregion
+
+    // If we have token parameters, verify them to enter recovery mode
+    // This should happen BEFORE any auth state changes
+    if (tokenHash && type === 'recovery') {
+      // #region agent log
+      const logData3 = {location:'reset-password/page.tsx:27',message:'Entering token verification branch',data:{tokenHash:tokenHash.substring(0,10)+'...'},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B'};
+      console.log('[DEBUG]', logData3);
+      fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData3)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+      // #endregion
+      // Verify the OTP token to establish recovery session
+      // This will put the user in recovery mode without fully authenticating them
+      supabase.auth.verifyOtp({
+        token_hash: tokenHash,
+        type: 'recovery',
+      }).then(({ error }) => {
+        // #region agent log
+        const logData4 = {location:'reset-password/page.tsx:33',message:'verifyOtp callback',data:{hasError:!!error,errorMessage:error?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,D'};
+        console.log('[DEBUG]', logData4);
+        fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData4)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+        // #endregion
+        if (error) {
+          setError('Invalid or expired password reset link. Please request a new one.');
+          setIsRecoveryMode(false);
+        } else {
+          // Successfully verified - user is now in recovery mode
+          // Even if this creates a session, we won't redirect until password is updated
+          recoveryModeEnteredRef.current = true; // Mark that we've entered recovery mode
+          setIsRecoveryMode(true);
+          setError(null);
+          setMessage('Please enter your new password below.');
+        }
+      });
+    } else {
+      // #region agent log
+      const logData5 = {location:'reset-password/page.tsx:45',message:'Entering else branch (no token)',data:{tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,type},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'A,C,E'};
+      console.log('[DEBUG]', logData5);
+      fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData5)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+      // #endregion
+      
+      // No token in URL - check if user has a recovery session
+      // First check session to see if it's a recovery session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        // #region agent log
+        const logData6a = {location:'reset-password/page.tsx:48a',message:'getSession callback in else branch',data:{hasSession:!!session,sessionAud:session?.user?.aud},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,C'};
+        console.log('[DEBUG]', logData6a);
+        fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData6a)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+        // #endregion
+        
+        // Check if this is a recovery session or if we've already entered recovery mode
+        // If user has a session but no token, they might be in recovery mode already
+        // OR if we've already entered recovery mode (token was processed), allow password entry
+        if ((session && !tokenHash) || recoveryModeEnteredRef.current) {
+          // #region agent log
+          const logData6b = {location:'reset-password/page.tsx:48b',message:'Recovery mode detected (session or ref)',data:{hasSession:!!session,tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,recoveryModeEntered:recoveryModeEnteredRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,C'};
+          console.log('[DEBUG]', logData6b);
+          fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData6b)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+          // #endregion
+          // User has a session or we've already entered recovery mode
+          // Allow them to set password instead of redirecting
+          recoveryModeEnteredRef.current = true; // Ensure ref is set
+          setIsRecoveryMode(true);
+          setError(null);
+          setMessage('Please enter your new password below.');
+          return;
+        }
+        
+        // No session and haven't entered recovery mode - check if user is authenticated (but not in recovery flow)
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          // #region agent log
+          const logData6 = {location:'reset-password/page.tsx:48',message:'getUser callback in else branch',data:{hasUser:!!user,userId:user?.id?.substring(0,10),tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,hasSession:!!session,recoveryModeEntered:recoveryModeEnteredRef.current,willRedirect:!!(user&&!tokenHash&&!session&&!recoveryModeEnteredRef.current)},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,C'};
+          console.log('[DEBUG]', logData6);
+          fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData6)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+          // #endregion
+          if (user && !tokenHash && !session && !recoveryModeEnteredRef.current) {
+            // #region agent log
+            const logData7 = {location:'reset-password/page.tsx:49',message:'REDIRECT TRIGGERED - line 52',data:{userId:user.id?.substring(0,10),tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,hasSession:!!session,recoveryModeEntered:recoveryModeEnteredRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'B,C'};
+            console.log('[DEBUG]', logData7);
+            fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData7)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+            // #endregion
+            // User is authenticated but not in recovery flow and no session - redirect to home
+            // This prevents authenticated users from accessing the reset page directly
+            router.push('/');
+          } else if (!tokenHash && !session && !recoveryModeEnteredRef.current) {
+            // No token, no session, no recovery mode entered, and no user - need to click email link
+            setError('Please click the password reset link from your email to continue.');
+            setIsRecoveryMode(false);
+          }
+        });
+      });
+    }
+  }, [router, searchParams, supabase.auth]);
+
+  useEffect(() => {
+    // #region agent log
+    const logData8 = {location:'reset-password/page.tsx:62',message:'onAuthStateChange setup',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'};
+    console.log('[DEBUG]', logData8);
+    fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData8)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+    // #endregion
     // Listen for auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // #region agent log
+      const logData9 = {location:'reset-password/page.tsx:66',message:'Auth state change event',data:{event,hasSession:!!session,passwordJustUpdated:passwordJustUpdatedRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'};
+      console.log('[DEBUG]', logData9);
+      fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData9)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+      // #endregion
       if (event === 'PASSWORD_RECOVERY') {
         // User is in password recovery mode - allow them to set new password
+        recoveryModeEnteredRef.current = true; // Mark that we've entered recovery mode
         setIsRecoveryMode(true);
         setError(null);
-        setMessage(null);
+        setMessage('Please enter your new password below.');
       } else if (event === 'SIGNED_IN') {
-        // Only redirect if password was just updated (not on initial load)
+        // IMPORTANT: Only redirect if password was just updated by the user
+        // Do NOT redirect if SIGNED_IN happens from recovery token verification
+        // The passwordJustUpdatedRef is only set to true when user submits the form
         if (passwordJustUpdatedRef.current) {
           setMessage('Password updated successfully! Redirecting...');
           setTimeout(() => {
             router.push('/dashboard');
           }, 2000);
         } else {
-          // User was auto-signed in from recovery link - don't redirect yet
-          // They still need to set a new password
-          setIsRecoveryMode(true);
-          setError(null);
+          // SIGNED_IN happened but password wasn't just updated
+          // This could be from recovery token verification - don't redirect
+          // User still needs to set a new password
+          const tokenHash = searchParams.get('token_hash');
+          // #region agent log
+          const logData10 = {location:'reset-password/page.tsx:85',message:'SIGNED_IN but password not updated',data:{tokenHash:tokenHash?tokenHash.substring(0,10)+'...':null,passwordJustUpdated:passwordJustUpdatedRef.current},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'};
+          console.log('[DEBUG]', logData10);
+          fetch('http://127.0.0.1:7242/ingest/fd116326-23a3-480d-913c-37095c9a4041',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(logData10)}).catch((e)=>console.error('[DEBUG] Fetch failed:',e));
+          // #endregion
+          if (tokenHash) {
+            // We have a recovery token, so this is part of the recovery flow
+            recoveryModeEnteredRef.current = true; // Mark that we've entered recovery mode
+            setIsRecoveryMode(true);
+            setError(null);
+            setMessage('Please enter your new password below.');
+          }
         }
       }
     });
-
-    // If we have token parameters, verify them to enter recovery mode
-    if (tokenHash && type === 'recovery') {
-      supabase.auth.verifyOtp({
-        token_hash: tokenHash,
-        type: 'recovery',
-      }).then(({ error }) => {
-        if (error) {
-          setError('Invalid or expired password reset link. Please request a new one.');
-        } else {
-          setIsRecoveryMode(true);
-          setError(null);
-        }
-      });
-    } else {
-      // Check if user has a session - might be in recovery mode already
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        if (session) {
-          // User has a session - check if they're in recovery mode
-          // We'll assume they are if they're on this page
-          setIsRecoveryMode(true);
-        } else if (!tokenHash) {
-          // No session and no token - user needs to click the email link
-          setError('Please click the password reset link from your email to continue.');
-        }
-      });
-    }
 
     return () => {
       subscription.unsubscribe();

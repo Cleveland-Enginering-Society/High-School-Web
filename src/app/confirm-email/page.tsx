@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -11,6 +11,18 @@ export default function ConfirmEmailPage() {
   const [isResending, setIsResending] = useState(false);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendError, setResendError] = useState<string | null>(null);
+  const supabase = createClient();
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push('/');
+      }
+    };
+    checkAuth();
+  }, [router, supabase.auth]);
 
   const handleResendEmail = async () => {
     if (!email) {

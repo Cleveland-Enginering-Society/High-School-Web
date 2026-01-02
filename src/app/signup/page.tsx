@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 interface FormData {
   studentEmail: string;
@@ -43,6 +44,7 @@ interface FormErrors {
 
 export default function SignupPage() {
   const router = useRouter();
+  const supabase = createClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -65,6 +67,17 @@ export default function SignupPage() {
     parentDate: undefined,
   });
   const [errors, setErrors] = useState<FormErrors>({});
+
+  useEffect(() => {
+    // Redirect if already authenticated
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        router.push('/');
+      }
+    };
+    checkAuth();
+  }, [router, supabase.auth]);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
