@@ -7,10 +7,20 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = searchParams.get("next");
 
+  // Handle password recovery - redirect to reset password page
+  if (type === "recovery") {
+    const redirectTo = request.nextUrl.clone();
+    redirectTo.pathname = "/reset-password";
+    // Keep the token parameters for the reset password page
+    return NextResponse.redirect(redirectTo);
+  }
+
+  // For other auth types, use the next parameter or default to dashboard
+  const defaultNext = next ?? "/dashboard";
   const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = next;
+  redirectTo.pathname = defaultNext;
   redirectTo.searchParams.delete("token_hash");
   redirectTo.searchParams.delete("type");
   redirectTo.searchParams.delete("code");

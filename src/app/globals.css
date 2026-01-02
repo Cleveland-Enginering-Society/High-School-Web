@@ -5,14 +5,21 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --navy-blue: #00549e;
+  --aqua-blue: #5f88c2;
+  --light-blue: #bed5e8;
+  --dark-blue: #1b3557;
+  --default-orange: #e19e4e;
+  --white: #ffffff;
+  --dark-gray: #221f20;
 }
 
-@media (prefers-color-scheme: dark) {
+/* @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
   }
-}
+} */
 
 body {
   color: var(--foreground);
