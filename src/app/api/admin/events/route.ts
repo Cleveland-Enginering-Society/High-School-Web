@@ -15,8 +15,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // TODO: Add admin role check here if needed
-    // For now, any authenticated user can create events
+    // Check if user has admin access (user_type === 2)
+    const { data: userData, error: fetchError } = await supabase
+      .from('User')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    if (fetchError || !userData || userData.user_type !== 2) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
 
     const body = await request.json();
     const {

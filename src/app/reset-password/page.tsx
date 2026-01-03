@@ -163,7 +163,7 @@ export default function ResetPasswordPage() {
         if (passwordJustUpdatedRef.current) {
           setMessage('Password updated successfully! Redirecting...');
           setTimeout(() => {
-            router.push('/dashboard');
+            router.push('/');
           }, 2000);
         } else {
           // SIGNED_IN happened but password wasn't just updated

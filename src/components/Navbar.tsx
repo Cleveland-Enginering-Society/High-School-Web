@@ -10,14 +10,31 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    // Check authentication status
+    // Check authentication status and admin access
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
+      
+      // Check if user is admin (user_type === 2)
+      if (user) {
+        try {
+          const response = await fetch('/api/account');
+          if (response.ok) {
+            const data = await response.json();
+            setIsAdmin(data.user?.user_type === 2);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+      
       setIsLoading(false);
     };
 
@@ -26,8 +43,24 @@ export default function Navbar() {
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       setIsAuthenticated(!!session);
+      
+      // Re-check admin status on auth change
+      if (session?.user) {
+        try {
+          const response = await fetch('/api/account');
+          if (response.ok) {
+            const data = await response.json();
+            setIsAdmin(data.user?.user_type === 2);
+          }
+        } catch (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => {

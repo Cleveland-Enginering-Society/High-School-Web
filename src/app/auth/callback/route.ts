@@ -22,8 +22,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(redirectTo);
   }
 
-  // For other auth types, use the next parameter or default to dashboard
-  const defaultNext = next ?? "/dashboard";
+  // For other auth types, use the next parameter or default to homepage
+  const defaultNext = next ?? "/";
   const redirectTo = request.nextUrl.clone();
   redirectTo.pathname = defaultNext;
   redirectTo.searchParams.delete("token_hash");

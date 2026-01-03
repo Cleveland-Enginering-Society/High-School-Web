@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 interface FormData {
@@ -26,13 +26,17 @@ interface FormErrors {
   eventWaiverParent?: string;
 }
 
-export default function CreateEventPage() {
+export default function EditEventPage() {
   const router = useRouter();
+  const params = useParams();
   const supabase = createClient();
+  const eventId = params.id as string;
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingEvent, setIsLoadingEvent] = useState(true);
   const [formData, setFormData] = useState<FormData>({
     eventName: '',
     eventDate: '',
@@ -47,7 +51,7 @@ export default function CreateEventPage() {
 
   useEffect(() => {
     // Check if user is authenticated and has user_type === 2 (admin)
-    const checkAuth = async () => {
+    const checkAuthAndLoadEvent = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
@@ -69,9 +73,49 @@ export default function CreateEventPage() {
       }
 
       setIsLoading(false);
+      
+      // Load event data
+      await loadEvent();
     };
-    checkAuth();
-  }, [router, supabase.auth]);
+    
+    checkAuthAndLoadEvent();
+  }, [router, supabase.auth, eventId]);
+
+  const loadEvent = async () => {
+    try {
+      const response = await fetch(`/api/admin/events/${eventId}`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        setSubmitError(errorData.error || 'Failed to load event');
+        setIsLoadingEvent(false);
+        return;
+      }
+
+      const data = await response.json();
+      const event = data.event;
+
+      // Parse event_time to separate date and time
+      const eventDateTime = new Date(event.event_time);
+      const eventDate = eventDateTime.toISOString().split('T')[0];
+      const eventTime = eventDateTime.toTimeString().slice(0, 5);
+
+      setFormData({
+        eventName: event.event_name || '',
+        eventDate: eventDate,
+        eventTime: eventTime,
+        eventLocation: event.event_location || '',
+        eventDescription: event.event_description || '',
+        maxUsers: event.max_users,
+        eventWaiverInfo: event.event_waiver_info || '',
+        eventWaiverParent: event.event_waiver_parent || '',
+      });
+    } catch (error) {
+      console.error('Error loading event:', error);
+      setSubmitError('Failed to load event data');
+    } finally {
+      setIsLoadingEvent(false);
+    }
+  };
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -133,8 +177,8 @@ export default function CreateEventPage() {
       // Combine date and time into a single datetime string
       const eventDateTime = `${formData.eventDate}T${formData.eventTime}:00`;
       
-      const response = await fetch('/api/admin/events', {
-        method: 'POST',
+      const response = await fetch(`/api/admin/events/${eventId}`, {
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -152,36 +196,25 @@ export default function CreateEventPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        setSubmitError(data.error || 'Failed to create event');
+        setSubmitError(data.error || 'Failed to update event');
         setIsSubmitting(false);
         return;
       }
 
       setSubmitSuccess(true);
-      // Reset form
-      setFormData({
-        eventName: '',
-        eventDate: '',
-        eventTime: '',
-        eventLocation: '',
-        eventDescription: '',
-        maxUsers: undefined,
-        eventWaiverInfo: '',
-        eventWaiverParent: '',
-      });
       
       // Redirect after 2 seconds
       setTimeout(() => {
         router.push('/events');
       }, 2000);
     } catch (error) {
-      console.error('Event creation error:', error);
+      console.error('Event update error:', error);
       setSubmitError('An unexpected error occurred. Please try again.');
       setIsSubmitting(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isLoadingEvent) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
@@ -192,7 +225,7 @@ export default function CreateEventPage() {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">Create Event</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-6">Edit Event</h1>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Event Name */}
@@ -357,18 +390,25 @@ export default function CreateEventPage() {
           {/* Success Message */}
           {submitSuccess && (
             <div className="mt-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
-              Event created successfully! Redirecting...
+              Event updated successfully! Redirecting...
             </div>
           )}
 
           {/* Submit Button */}
-          <div className="flex justify-end mt-8">
+          <div className="flex justify-between mt-8">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            >
+              Cancel
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
               className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Creating...' : 'Create Event'}
+              {isSubmitting ? 'Updating...' : 'Update Event'}
             </button>
           </div>
         </form>
