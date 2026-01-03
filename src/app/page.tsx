@@ -77,7 +77,29 @@ export default function Home() {
     <div>
       <h3 className="text-lg font-semibold mb-4 md:ml-20">Explore</h3>
       <ul className="space-y-5 text-sm md:ml-20">
-        <li><a href="/about" className="hover:underline">About Us</a></li>
+        <li>
+          <a
+            href="http://localhost:3000/about-us"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            About Us
+          </a>
+        </li>
+        <li>
+          <a
+            href="http://localhost:3000/signup"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            Signup
+          </a>
+        </li>
+      </ul>
+
+      <ul className="space-y-5 text-sm md:ml-20">
         <li><a href="/get-involved" className="hover:underline">Signup</a></li>
         <li><a href="/news-events" className="hover:underline">Events</a></li>
       </ul>
