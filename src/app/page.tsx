@@ -93,12 +93,12 @@ export default function Home() {
       <ul className="space-y-5 text-sm md:ml-20">
         <li>
           <a
-            href="http://localhost:3000/about-us"
+            href="http://localhost:3000/about"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
           >
-            About Us
+            About
           </a>
         </li>
         <li>

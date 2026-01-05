@@ -85,14 +85,14 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="flex items-center justify-between w-full p-4">
+      <nav className="flex items-center justify-between w-full p-10 translate-x-5">
         {/* Logo - Left side */}
         <Link href="/" className="flex items-center">
           <Image
             src="/CES Left Aligned.webp"
             alt="CES Logo"
-            width={150}
-            height={50}
+            width={300}
+            height={100}
             className="object-contain"
           />
         </Link>
@@ -108,8 +108,8 @@ export default function Navbar() {
                 <Link href="/events" className="text-base">
                   Events
                 </Link>
-                <Link href="/about-us" className="text-base">
-                  About Us
+                <Link href="/about" className="text-base">
+                  About 
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -129,8 +129,8 @@ export default function Navbar() {
                 <Link href="/events" className="text-base">
                   Events
                 </Link>
-                <Link href="/about-us" className="text-base">
-                  About Us
+                <Link href="/about" className="text-base">
+                  About 
                 </Link>
               </>
             )}
@@ -184,11 +184,11 @@ export default function Navbar() {
                     Events
                   </Link>
                   <Link
-                    href="/about-us"
+                    href="/about"
                     onClick={closeMobileMenu}
                     className="text-xl"
                   >
-                    About Us
+                    About 
                   </Link>
                   <button
                     onClick={handleLogout}
@@ -221,11 +221,11 @@ export default function Navbar() {
                     Events
                   </Link>
                   <Link
-                    href="/about-us"
+                    href="/about"
                     onClick={closeMobileMenu}
                     className="text-xl"
                   >
-                    About Us
+                    About
                   </Link>
                 </>
               )}
