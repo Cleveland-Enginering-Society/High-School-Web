@@ -1,62 +1,20 @@
-import { type EmailOtpType } from "@supabase/supabase-js";
-import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from '@/lib/supabase/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const token_hash = searchParams.get("token_hash");
-  const type = searchParams.get("type") as EmailOtpType | null;
-  const code = searchParams.get("code");
-  const next = searchParams.get("next");
-
-  // Handle password recovery - redirect to reset password page WITHOUT verifying OTP
-  // This prevents auto-authentication and allows user to set new password
-  if (type === "recovery") {
-    const redirectTo = request.nextUrl.clone();
-    redirectTo.pathname = "/reset-password";
-    // Keep the token_hash and type parameters for the reset password page
-    if (token_hash) {
-      redirectTo.searchParams.set("token_hash", token_hash);
-    }
-    redirectTo.searchParams.set("type", "recovery");
-    return NextResponse.redirect(redirectTo);
-  }
-
-  // For other auth types, use the next parameter or default to homepage
-  const defaultNext = next ?? "/";
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.pathname = defaultNext;
-  redirectTo.searchParams.delete("token_hash");
-  redirectTo.searchParams.delete("type");
-  redirectTo.searchParams.delete("code");
-  redirectTo.searchParams.delete("next");
-
-  if (token_hash && type) {
-    const supabase = await createClient();
-
-    const { error } = await supabase.auth.verifyOtp({
-      type,
-      token_hash,
-    });
-
-    if (!error) {
-      return NextResponse.redirect(redirectTo);
-    }
-  }
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
+  const next = searchParams.get('next') ?? '/';
 
   if (code) {
     const supabase = await createClient();
-
+    // This creates the session cookie
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-
     if (!error) {
-      return NextResponse.redirect(redirectTo);
+      return NextResponse.redirect(`${origin}${next}`);
     }
   }
 
-  // Return the user to an error page with instructions
-  redirectTo.pathname = "/login";
-  redirectTo.searchParams.set("error", "auth_callback_error");
-  return NextResponse.redirect(redirectTo);
+  // If code exchange fails, send back to login
+  return NextResponse.redirect(`${origin}/login?error=Session expired or invalid`);
 }
-
