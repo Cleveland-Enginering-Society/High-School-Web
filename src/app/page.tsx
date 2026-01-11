@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import EventsPreview from '@/components/EventsPreview';
 
 export default function Home() {
   return (
@@ -31,10 +34,21 @@ export default function Home() {
         </h2>
 
         {/* Section content */}
-          <div className="pt-10">
+          <div className="pt-16">
+  <EventsPreview />
+
+  <div className="mt-8 text-right">
+    <Link
+      href="/events"
+      className="text-[#00539eff] font-semibold hover:underline"
+    >
+      View all events →
+    </Link>
+  </div>
+</div>
+
         {/* your events content here */}
       </div>
-    </div>
     </section>
 
     <section className="relative w-full bg-[#f59e0b] py-20 overflow-hidden">
@@ -79,12 +93,12 @@ export default function Home() {
       <ul className="space-y-5 text-sm md:ml-20">
         <li>
           <a
-            href="http://localhost:3000/about-us"
+            href="http://localhost:3000/about"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
           >
-            About Us
+            About
           </a>
         </li>
         <li>
@@ -97,11 +111,16 @@ export default function Home() {
             Signup
           </a>
         </li>
-      </ul>
-
-      <ul className="space-y-5 text-sm md:ml-20">
-        <li><a href="/get-involved" className="hover:underline">Signup</a></li>
-        <li><a href="/news-events" className="hover:underline">Events</a></li>
+        <li>
+          <a
+            href="http://localhost:3000/events"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            Events
+          </a>
+        </li>
       </ul>
     </div>
 
@@ -109,8 +128,26 @@ export default function Home() {
     <div>
       <h3 className="text-lg font-semibold mb-4">Member Access</h3>
       <ul className="space-y-5 text-sm">
-        <li><a href="/contact" className="hover:underline">Contact</a></li>
-        <li><a href="/login" className="hover:underline">Login</a></li>
+        <li>
+          <a
+            href="http://localhost:3000/contact"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            Contact
+          </a>
+        </li>
+        <li>
+          <a
+            href="http://localhost:3000/login"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:underline"
+          >
+            Login
+          </a>
+        </li>
       </ul>
     </div>
 
