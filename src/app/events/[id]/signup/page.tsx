@@ -81,7 +81,7 @@ export default function EventSignupPage() {
               setRegistrationData(registrationResult.registration);
               // Pre-fill form data with registration data
               const reg = registrationResult.registration;
-              // Handle signature - could be boolean or text
+              // Store signature text (now always text, but handle boolean for legacy data)
               if (reg.event_waiver_student_sign) {
                 const studentSign = typeof reg.event_waiver_student_sign === 'boolean' 
                   ? 'Signed' 
