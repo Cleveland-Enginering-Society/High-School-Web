@@ -95,7 +95,7 @@ export default function ConfirmEmailPage() {
 
           <div className="border-t border-gray-200 pt-4">
             <p className="text-sm text-gray-600 mb-4">
-              Didn't receive the email? Click the button below to resend the confirmation email.
+              <p>{"Didn't receive the email? Click the button below to resend the confirmation email."}</p>
             </p>
             
             <div className="space-y-3">
