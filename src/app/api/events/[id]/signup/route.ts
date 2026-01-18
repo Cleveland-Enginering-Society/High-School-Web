@@ -75,6 +75,9 @@ export async function POST(
       studentDate,
       parentSignature,
       parentDate,
+      registerParent,
+      parentName,
+      parentCompany,
     } = body;
 
     // Validate required fields
@@ -117,6 +120,35 @@ export async function POST(
       );
     }
 
+    // Check parent registration if requested
+    if (registerParent) {
+      if (!parentName || !parentCompany) {
+        return NextResponse.json(
+          { error: 'Parent name and company are required when registering a parent' },
+          { status: 400 }
+        );
+      }
+
+      const parentList = event.parent_list || [];
+      const parentCount = parentList.length;
+      
+      // Check if parent spaces are available
+      if (parentCount >= (event.max_parents || 0)) {
+        return NextResponse.json(
+          { error: 'No parent spaces available for this event' },
+          { status: 400 }
+        );
+      }
+
+      // Check if user has already registered a parent
+      if (parentList.includes(user.id)) {
+        return NextResponse.json(
+          { error: 'You have already registered a parent for this event' },
+          { status: 400 }
+        );
+      }
+    }
+
     // Prepare data for Event_Registration table
     const registrationData = {
       event_id: eventId,
@@ -133,6 +165,8 @@ export async function POST(
           ? parentDate.split('T')[0] 
           : new Date(parentDate).toISOString().split('T')[0])
         : null,
+      registered_parent_name: registerParent ? parentName : null,
+      registered_parent_company: registerParent ? parentCompany : null,
     };
 
     // Insert into Event_Registration table
@@ -150,9 +184,19 @@ export async function POST(
 
     // Update the Event table's registered_list array
     const updatedRegisteredList = [...registeredList, user.id];
+    const updateData: { registered_list: string[]; parent_list?: string[] } = {
+      registered_list: updatedRegisteredList,
+    };
+
+    // Update parent_list if parent is being registered
+    if (registerParent) {
+      const parentList = event.parent_list || [];
+      updateData.parent_list = [...parentList, user.id];
+    }
+
     const { error: updateError } = await supabase
       .from('Event')
-      .update({ registered_list: updatedRegisteredList })
+      .update(updateData)
       .eq('id', eventId);
 
     if (updateError) {
@@ -241,11 +285,17 @@ export async function DELETE(
       );
     }
 
-    // Update the Event table's registered_list array (remove user from list)
+    // Update the Event table's registered_list and parent_list arrays (remove user from lists)
     const updatedRegisteredList = registeredList.filter((id: string) => id !== user.id);
+    const parentList = event.parent_list || [];
+    const updatedParentList = parentList.filter((id: string) => id !== user.id);
+    
     const { error: updateError } = await supabase
       .from('Event')
-      .update({ registered_list: updatedRegisteredList })
+      .update({ 
+        registered_list: updatedRegisteredList,
+        parent_list: updatedParentList,
+      })
       .eq('id', eventId);
 
     if (updateError) {

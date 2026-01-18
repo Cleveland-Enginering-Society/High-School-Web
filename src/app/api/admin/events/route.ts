@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       eventLocation,
       eventDescription,
       maxUsers,
+      maxParents,
       eventWaiverInfo,
       eventWaiverParent,
     } = body;
@@ -55,9 +56,11 @@ export async function POST(request: NextRequest) {
       event_location: eventLocation,
       event_description: eventDescription,
       max_users: maxUsers,
+      max_parents: maxParents || 0,
       event_waiver_info: eventWaiverInfo,
       event_waiver_parent: eventWaiverParent || null,
       registered_list: [], // Initialize empty array for registered users
+      parent_list: [], // Initialize empty array for registered parents
     };
 
     // Insert data into Event table

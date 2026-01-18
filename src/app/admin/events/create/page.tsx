@@ -11,6 +11,7 @@ interface FormData {
   eventLocation: string;
   eventDescription: string;
   maxUsers: number | undefined;
+  maxParents: number | undefined;
   eventWaiverInfo: string;
   eventWaiverParent: string;
 }
@@ -22,6 +23,7 @@ interface FormErrors {
   eventLocation?: string;
   eventDescription?: string;
   maxUsers?: string;
+  maxParents?: string;
   eventWaiverInfo?: string;
   eventWaiverParent?: string;
 }
@@ -40,6 +42,7 @@ export default function CreateEventPage() {
     eventLocation: '',
     eventDescription: '',
     maxUsers: undefined,
+    maxParents: undefined,
     eventWaiverInfo: '',
     eventWaiverParent: '',
   });
@@ -84,7 +87,7 @@ export default function CreateEventPage() {
     }
   };
 
-  const handleNumberChange = (field: 'maxUsers', value: string) => {
+  const handleNumberChange = (field: 'maxUsers' | 'maxParents', value: string) => {
     const numValue = value === '' ? undefined : parseInt(value, 10);
     handleInputChange(field, numValue);
   };
@@ -144,6 +147,7 @@ export default function CreateEventPage() {
           eventLocation: formData.eventLocation,
           eventDescription: formData.eventDescription,
           maxUsers: formData.maxUsers,
+          maxParents: formData.maxParents || 0,
           eventWaiverInfo: formData.eventWaiverInfo,
           eventWaiverParent: formData.eventWaiverParent || null,
         }),
@@ -166,6 +170,7 @@ export default function CreateEventPage() {
         eventLocation: '',
         eventDescription: '',
         maxUsers: undefined,
+        maxParents: undefined,
         eventWaiverInfo: '',
         eventWaiverParent: '',
       });
@@ -308,6 +313,26 @@ export default function CreateEventPage() {
             />
             {errors.maxUsers && (
               <p className="text-red-500 text-sm mt-1">{errors.maxUsers}</p>
+            )}
+          </div>
+
+          {/* Maximum Number of Parents */}
+          <div>
+            <label htmlFor="maxParents" className="block text-sm font-medium mb-1">
+              Maximum Number of Parents
+            </label>
+            <input
+              type="number"
+              id="maxParents"
+              min="0"
+              value={formData.maxParents ?? ''}
+              onChange={(e) => handleNumberChange('maxParents', e.target.value)}
+              className={`w-full px-3 py-2 border rounded ${
+                errors.maxParents ? 'border-red-500' : 'border-gray-300'
+              }`}
+            />
+            {errors.maxParents && (
+              <p className="text-red-500 text-sm mt-1">{errors.maxParents}</p>
             )}
           </div>
 

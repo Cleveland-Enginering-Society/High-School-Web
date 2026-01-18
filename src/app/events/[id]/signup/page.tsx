@@ -12,9 +12,11 @@ interface Event {
   event_location: string;
   event_description: string;
   max_users: number;
+  max_parents: number;
   event_waiver_info: string;
   event_waiver_parent: string | null;
   registered_list: string[];
+  parent_list: string[];
 }
 
 export default function EventSignupPage() {
@@ -39,6 +41,9 @@ export default function EventSignupPage() {
     studentDate: undefined as Date | undefined,
     parentSignature: '',
     parentDate: undefined as Date | undefined,
+    registerParent: false,
+    parentName: '',
+    parentCompany: '',
   });
   const [registrationData, setRegistrationData] = useState<{
     event_waiver_student_sign: string | null;
@@ -51,6 +56,8 @@ export default function EventSignupPage() {
     studentDate?: string;
     parentSignature?: string;
     parentDate?: string;
+    parentName?: string;
+    parentCompany?: string;
   }>({});
 
   useEffect(() => {
@@ -114,6 +121,20 @@ export default function EventSignupPage() {
                   parentDate: parentDate,
                 }));
               }
+              // Load parent registration data if exists
+              if (reg.registered_parent_name) {
+                setFormData(prev => ({
+                  ...prev,
+                  registerParent: true,
+                  parentName: reg.registered_parent_name,
+                }));
+              }
+              if (reg.registered_parent_company) {
+                setFormData(prev => ({
+                  ...prev,
+                  parentCompany: reg.registered_parent_company,
+                }));
+              }
             }
           }
         } catch (error) {
@@ -175,6 +196,12 @@ export default function EventSignupPage() {
     return event.max_users - registeredCount;
   };
 
+  const getOpenParentSpaces = () => {
+    if (!event) return 0;
+    const parentCount = event.parent_list?.length || 0;
+    return event.max_parents - parentCount;
+  };
+
   const formatDateForInput = (date: Date | undefined): string => {
     if (!date) return '';
     const year = date.getFullYear();
@@ -234,6 +261,16 @@ export default function EventSignupPage() {
     if (!formData.parentDate) {
       newErrors.parentDate = 'Parent date is required';
     }
+    
+    // Validate parent registration fields if checkbox is checked
+    if (formData.registerParent) {
+      if (!formData.parentName.trim()) {
+        newErrors.parentName = 'Parent name is required';
+      }
+      if (!formData.parentCompany.trim()) {
+        newErrors.parentCompany = 'Parent company is required';
+      }
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -265,6 +302,9 @@ export default function EventSignupPage() {
           parentDate: formData.parentDate 
             ? formData.parentDate.toISOString().split('T')[0]
             : null,
+          registerParent: formData.registerParent,
+          parentName: formData.registerParent ? formData.parentName : null,
+          parentCompany: formData.registerParent ? formData.parentCompany : null,
         }),
       });
 
@@ -368,8 +408,11 @@ export default function EventSignupPage() {
   }
 
   const openSpaces = getOpenSpaces();
+  const openParentSpaces = getOpenParentSpaces();
   const isFull = openSpaces === 0;
+  const isParentFull = openParentSpaces === 0;
   const isAlreadyRegistered = userId ? (event.registered_list?.includes(userId) || false) : false;
+  const hasParentRegistered = userId ? (event.parent_list?.includes(userId) || false) : false;
 
   return (
     <div className="min-h-screen p-4 md:p-8">
@@ -393,11 +436,19 @@ export default function EventSignupPage() {
             <p className="text-gray-600 whitespace-pre-wrap mt-1">{event.event_description}</p>
           </div>
           <p className="text-gray-600">
-            <span className="font-medium">Open Spaces:</span>{' '}
+            <span className="font-medium">Open Student Spaces:</span>{' '}
             <span className={openSpaces > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
               {openSpaces}
             </span>
           </p>
+          {event.max_parents > 0 && (
+            <p className="text-gray-600">
+              <span className="font-medium">Open Parent Spaces:</span>{' '}
+              <span className={openParentSpaces > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                {openParentSpaces}
+              </span>
+            </p>
+          )}
         </div>
 
         {/* Waiver Information - For authenticated users */}
@@ -534,6 +585,101 @@ export default function EventSignupPage() {
                   )}
                 </div>
               </div>
+
+              {/* Parent Registration Section - After parent signature */}
+              {event.max_parents > 0 && (
+                <>
+                  {/* Separator Line */}
+                  <div className="border-t border-gray-300 my-6"></div>
+
+                  <div className="mb-6">
+                    <div className="flex items-center mb-4">
+                      <input
+                        type="checkbox"
+                        id="registerParent"
+                        checked={formData.registerParent || hasParentRegistered}
+                        onChange={(e) => {
+                          if (hasParentRegistered) return; // Prevent changes if already registered
+                          setFormData(prev => ({
+                            ...prev,
+                            registerParent: e.target.checked,
+                            parentName: e.target.checked ? prev.parentName : '',
+                            parentCompany: e.target.checked ? prev.parentCompany : '',
+                          }));
+                          // Clear errors when unchecking
+                          if (!e.target.checked) {
+                            setErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.parentName;
+                              delete newErrors.parentCompany;
+                              return newErrors;
+                            });
+                          }
+                        }}
+                        disabled={isParentFull || hasParentRegistered || isAlreadyRegistered}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      />
+                      <label htmlFor="registerParent" className="ml-2 text-sm font-medium">
+                        Register a parent for this event
+                        {isParentFull && <span className="text-red-500 ml-2">(Full)</span>}
+                        {hasParentRegistered && <span className="text-blue-600 ml-2">(Already registered)</span>}
+                      </label>
+                    </div>
+
+                    {(formData.registerParent || hasParentRegistered) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        {/* Parent Name */}
+                        <div>
+                          <label htmlFor="parentName" className="block text-sm font-medium mb-1">
+                            Parent Name {!isAlreadyRegistered && <span className="text-red-500">*</span>}
+                          </label>
+                          <input
+                            type="text"
+                            id="parentName"
+                            value={formData.parentName}
+                            onChange={(e) => handleInputChange('parentName', e.target.value)}
+                            disabled={isAlreadyRegistered}
+                            className={`w-full px-3 py-2 border rounded ${
+                              isAlreadyRegistered
+                                ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
+                                : errors.parentName
+                                ? 'border-red-500'
+                                : 'border-gray-300'
+                            }`}
+                          />
+                          {errors.parentName && !isAlreadyRegistered && (
+                            <p className="text-red-500 text-sm mt-1">{errors.parentName}</p>
+                          )}
+                        </div>
+
+                        {/* Parent Company */}
+                        <div>
+                          <label htmlFor="parentCompany" className="block text-sm font-medium mb-1">
+                            Parent Company {!isAlreadyRegistered && <span className="text-red-500">*</span>}
+                          </label>
+                          <input
+                            type="text"
+                            id="parentCompany"
+                            value={formData.parentCompany}
+                            onChange={(e) => handleInputChange('parentCompany', e.target.value)}
+                            disabled={isAlreadyRegistered}
+                            className={`w-full px-3 py-2 border rounded ${
+                              isAlreadyRegistered
+                                ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
+                                : errors.parentCompany
+                                ? 'border-red-500'
+                                : 'border-gray-300'
+                            }`}
+                          />
+                          {errors.parentCompany && !isAlreadyRegistered && (
+                            <p className="text-red-500 text-sm mt-1">{errors.parentCompany}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}

@@ -12,9 +12,11 @@ interface Event {
   event_location: string;
   event_description: string;
   max_users: number;
+  max_parents: number;
   event_waiver_info: string;
   event_waiver_parent: string | null;
   registered_list: string[];
+  parent_list: string[];
 }
 
 export default function EventsPage() {
@@ -92,6 +94,11 @@ export default function EventsPage() {
     return event.max_users - registeredCount;
   };
 
+  const getOpenParentSpaces = (event: Event) => {
+    const parentCount = event.parent_list?.length || 0;
+    return (event.max_parents || 0) - parentCount;
+  };
+
   const handleSignup = (eventId: string) => {
     router.push(`/events/${eventId}/signup`);
   };
@@ -127,6 +134,7 @@ export default function EventsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {events.map((event) => {
               const openSpaces = getOpenSpaces(event);
+              const openParentSpaces = getOpenParentSpaces(event);
               const isRegistered = userId ? (event.registered_list?.includes(userId) || false) : false;
               return (
                 <div
@@ -146,11 +154,19 @@ export default function EventsPage() {
                       <span className="font-medium">Location:</span> {event.event_location}
                     </p>
                     <p className="text-gray-600">
-                      <span className="font-medium">Open Spaces:</span>{' '}
+                      <span className="font-medium">Open Student Spaces:</span>{' '}
                       <span className={openSpaces > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
                         {openSpaces}
                       </span>
                     </p>
+                    {event.max_parents > 0 && (
+                      <p className="text-gray-600">
+                        <span className="font-medium">Open Parent Spaces:</span>{' '}
+                        <span className={openParentSpaces > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                          {openParentSpaces}
+                        </span>
+                      </p>
+                    )}
                     {isRegistered && (
                       <p className="text-blue-600 font-semibold">
                         Registered
@@ -176,12 +192,20 @@ export default function EventsPage() {
                     </button>
                     
                     {isAdmin && (
-                      <Link
-                        href={`/admin/events/edit/${event.id}`}
-                        className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-center"
-                      >
-                        Edit Event
-                      </Link>
+                      <>
+                        <Link
+                          href={`/admin/events/${event.id}/registered-users`}
+                          className="w-full px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600 transition-colors text-center"
+                        >
+                          Registered Users
+                        </Link>
+                        <Link
+                          href={`/admin/events/edit/${event.id}`}
+                          className="w-full px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors text-center"
+                        >
+                          Edit Event
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>

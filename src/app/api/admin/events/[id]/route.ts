@@ -99,6 +99,7 @@ export async function PUT(
       eventLocation,
       eventDescription,
       maxUsers,
+      maxParents,
       eventWaiverInfo,
       eventWaiverParent,
     } = body;
@@ -118,6 +119,7 @@ export async function PUT(
       event_location: eventLocation,
       event_description: eventDescription,
       max_users: maxUsers,
+      max_parents: maxParents || 0,
       event_waiver_info: eventWaiverInfo,
       event_waiver_parent: eventWaiverParent || null,
     };
