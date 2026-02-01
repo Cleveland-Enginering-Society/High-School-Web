@@ -120,6 +120,9 @@ export default function Navbar() {
               </>
             ) : (
               <>
+                <Link href="/company" className="text-base">
+                  Company
+                </Link>
                 <Link href="/login" className="text-base">
                   Login
                 </Link>
@@ -169,6 +172,13 @@ export default function Navbar() {
             <div className="flex flex-col gap-6 items-center justify-center h-full">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    href="/company"
+                    onClick={closeMobileMenu}
+                    className="text-xl"
+                  >
+                  Company
+                  </Link>
                   <Link
                     href="/account"
                     onClick={closeMobileMenu}
