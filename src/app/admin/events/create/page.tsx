@@ -7,7 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 interface FormData {
   eventName: string;
   eventDate: string;
-  eventTime: string;
+  eventStartTime: string;
+  eventEndTime: string;
   eventLocation: string;
   eventDescription: string;
   maxUsers: number | undefined;
@@ -19,7 +20,8 @@ interface FormData {
 interface FormErrors {
   eventName?: string;
   eventDate?: string;
-  eventTime?: string;
+  eventStartTime?: string;
+  eventEndTime?: string;
   eventLocation?: string;
   eventDescription?: string;
   maxUsers?: string;
@@ -38,7 +40,8 @@ export default function CreateEventPage() {
   const [formData, setFormData] = useState<FormData>({
     eventName: '',
     eventDate: '',
-    eventTime: '',
+    eventStartTime: '',
+    eventEndTime: '',
     eventLocation: '',
     eventDescription: '',
     maxUsers: undefined,
@@ -65,7 +68,9 @@ export default function CreateEventPage() {
       }
 
       const data = await response.json();
-      if (data.user?.user_type !== 2) {
+      const isAdminUser = data.user?.user_type_table === 3;
+      const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
+      if (!isAdminUser && !isAdminStudent) {
         // User doesn't have admin access, redirect to home
         router.push('/');
         return;
@@ -101,8 +106,8 @@ export default function CreateEventPage() {
     if (!formData.eventDate) {
       newErrors.eventDate = 'Event date is required';
     }
-    if (!formData.eventTime) {
-      newErrors.eventTime = 'Event time is required';
+    if (!formData.eventStartTime) {
+      newErrors.eventStartTime = 'Event start time is required';
     }
     if (!formData.eventLocation.trim()) {
       newErrors.eventLocation = 'Event location is required';
@@ -134,7 +139,8 @@ export default function CreateEventPage() {
 
     try {
       // Combine date and time into a single datetime string
-      const eventDateTime = `${formData.eventDate}T${formData.eventTime}:00`;
+      const eventStartDateTime = `${formData.eventDate}T${formData.eventStartTime}:00`;
+      const eventEndDateTime = formData.eventEndTime ? `${formData.eventDate}T${formData.eventEndTime}:00` : null;
       
       const response = await fetch('/api/admin/events', {
         method: 'POST',
@@ -143,7 +149,8 @@ export default function CreateEventPage() {
         },
         body: JSON.stringify({
           eventName: formData.eventName,
-          eventTime: eventDateTime,
+          eventStartTime: eventStartDateTime,
+          eventEndTime: eventEndDateTime,
           eventLocation: formData.eventLocation,
           eventDescription: formData.eventDescription,
           maxUsers: formData.maxUsers,
@@ -166,7 +173,8 @@ export default function CreateEventPage() {
       setFormData({
         eventName: '',
         eventDate: '',
-        eventTime: '',
+        eventStartTime: '',
+        eventEndTime: '',
         eventLocation: '',
         eventDescription: '',
         maxUsers: undefined,
@@ -220,7 +228,7 @@ export default function CreateEventPage() {
           </div>
 
           {/* Event Date and Time */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="eventDate" className="block text-sm font-medium mb-1">
                 Event Date <span className="text-red-500">*</span>
@@ -240,20 +248,38 @@ export default function CreateEventPage() {
             </div>
 
             <div>
-              <label htmlFor="eventTime" className="block text-sm font-medium mb-1">
-                Event Time <span className="text-red-500">*</span>
+              <label htmlFor="eventStartTime" className="block text-sm font-medium mb-1">
+                Start Time <span className="text-red-500">*</span>
               </label>
               <input
                 type="time"
-                id="eventTime"
-                value={formData.eventTime}
-                onChange={(e) => handleInputChange('eventTime', e.target.value)}
+                id="eventStartTime"
+                value={formData.eventStartTime}
+                onChange={(e) => handleInputChange('eventStartTime', e.target.value)}
                 className={`w-full px-3 py-2 border rounded ${
-                  errors.eventTime ? 'border-red-500' : 'border-gray-300'
+                  errors.eventStartTime ? 'border-red-500' : 'border-gray-300'
                 }`}
               />
-              {errors.eventTime && (
-                <p className="text-red-500 text-sm mt-1">{errors.eventTime}</p>
+              {errors.eventStartTime && (
+                <p className="text-red-500 text-sm mt-1">{errors.eventStartTime}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="eventEndTime" className="block text-sm font-medium mb-1">
+                End Time
+              </label>
+              <input
+                type="time"
+                id="eventEndTime"
+                value={formData.eventEndTime}
+                onChange={(e) => handleInputChange('eventEndTime', e.target.value)}
+                className={`w-full px-3 py-2 border rounded ${
+                  errors.eventEndTime ? 'border-red-500' : 'border-gray-300'
+                }`}
+              />
+              {errors.eventEndTime && (
+                <p className="text-red-500 text-sm mt-1">{errors.eventEndTime}</p>
               )}
             </div>
           </div>

@@ -29,22 +29,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare data for User table
+    // First, insert into User table with user_type_table = 1 (Student)
     const userData = {
+      id: authData.user.id,
+      user_type_table: 1, // Student
+      is_active: true,
+    };
+
+    const { error: userInsertError } = await supabase
+      .from('User')
+      .insert([userData]);
+
+    if (userInsertError) {
+      return NextResponse.json(
+        { error: userInsertError.message },
+        { status: 400 }
+      );
+    }
+
+    // Prepare data for Student table
+    const studentData = {
       id: authData.user.id,
       student_first_name: formData.studentFirstName,
       student_last_name: formData.studentLastName,
       student_email: formData.studentEmail,
       student_grade: formData.studentGrade,
       student_phone: formData.studentPhone || null,
+      school: formData.school || null,
       parent_first_name: formData.parentFirstName,
       parent_last_name: formData.parentLastName,
       parent_email: formData.parentEmail,
       parent_phone: formData.parentPhone || null,
-      user_type: formData.memberType,
+      user_type: formData.memberType || 1, // Default to 1 (Student) if not provided
       photo_release: formData.photoMediaRelease,
-      student_participation_sign: !!formData.studentSignature, // Boolean: true if signature text exists
-      parent_participation_sign: !!formData.parentSignature, // Boolean: true if signature text exists
+      student_participation_sign: formData.studentSignature || null, // Store signature text
+      parent_participation_sign: formData.parentSignature || null, // Store signature text
       student_participation_date: formData.studentDate 
         ? (typeof formData.studentDate === 'string' 
           ? formData.studentDate.split('T')[0] 
@@ -57,10 +76,10 @@ export async function POST(request: NextRequest) {
         : null,
     };
 
-    // Insert data into User table
+    // Insert data into Student table
     const { error: insertError } = await supabase
-      .from('User')
-      .insert([userData]);
+      .from('Student')
+      .insert([studentData]);
 
     if (insertError) {
       return NextResponse.json(

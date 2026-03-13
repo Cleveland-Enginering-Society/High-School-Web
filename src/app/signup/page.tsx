@@ -11,11 +11,11 @@ interface FormData {
   studentLastName: string;
   studentGrade: number | undefined;
   studentPhone: number | undefined;
+  school: string;
   parentFirstName: string;
   parentLastName: string;
   parentEmail: string;
   parentPhone: number | undefined;
-  memberType: number | undefined;
   photoMediaRelease: boolean | undefined;
   studentSignature: string;
   studentDate: Date | undefined;
@@ -30,11 +30,11 @@ interface FormErrors {
   studentLastName?: string;
   studentGrade?: string;
   studentPhone?: string;
+  school?: string;
   parentFirstName?: string;
   parentLastName?: string;
   parentEmail?: string;
   parentPhone?: string;
-  memberType?: string;
   photoMediaRelease?: string;
   studentSignature?: string;
   studentDate?: string;
@@ -55,11 +55,11 @@ export default function SignupPage() {
     studentLastName: '',
     studentGrade: undefined,
     studentPhone: undefined,
+    school: '',
     parentFirstName: '',
     parentLastName: '',
     parentEmail: '',
     parentPhone: undefined,
-    memberType: undefined,
     photoMediaRelease: undefined,
     studentSignature: '',
     studentDate: undefined,
@@ -87,8 +87,9 @@ export default function SignupPage() {
 
   const validatePhone = (phone: number | undefined): boolean => {
     if (phone === undefined) return true; // Optional field
-    // Phone must be exactly 12 digits
-    return phone.toString().length === 12;
+    // Phone must be between 10 and 12 digits
+    const phoneLength = phone.toString().length;
+    return phoneLength >= 10 && phoneLength <= 12;
   };
 
   const validateGrade = (grade: number | undefined): boolean => {
@@ -159,7 +160,10 @@ export default function SignupPage() {
       newErrors.studentGrade = 'Grade must be between 9 and 12';
     }
     if (formData.studentPhone !== undefined && !validatePhone(formData.studentPhone)) {
-      newErrors.studentPhone = 'Phone number must be exactly 12 digits';
+      newErrors.studentPhone = 'Phone number must be between 10 and 12 digits';
+    }
+    if (!formData.school.trim()) {
+      newErrors.school = 'School is required';
     }
 
     // Parent fields
@@ -175,12 +179,7 @@ export default function SignupPage() {
       newErrors.parentEmail = 'Please enter a valid email address';
     }
     if (formData.parentPhone !== undefined && !validatePhone(formData.parentPhone)) {
-      newErrors.parentPhone = 'Phone number must be exactly 12 digits';
-    }
-
-    // Member type
-    if (formData.memberType === undefined) {
-      newErrors.memberType = 'Member type is required';
+      newErrors.parentPhone = 'Phone number must be between 10 and 12 digits';
     }
 
     setErrors(newErrors);
@@ -316,7 +315,6 @@ export default function SignupPage() {
           parentLastName: '',
           parentEmail: '',
           parentPhone: undefined,
-          memberType: undefined,
           photoMediaRelease: undefined,
           studentSignature: '',
           studentDate: undefined,
@@ -341,7 +339,6 @@ export default function SignupPage() {
         parentLastName: '',
         parentEmail: '',
         parentPhone: undefined,
-        memberType: undefined,
         photoMediaRelease: undefined,
         studentSignature: '',
         studentDate: undefined,
@@ -355,7 +352,7 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">Sign Up</h1>
+        <h1 className="text-2xl md:text-3xl font-bold mb-6">Student Sign Up</h1>
 
         {/* Progress indicator */}
         <div className="mb-8 flex items-center gap-2">
@@ -505,7 +502,7 @@ export default function SignupPage() {
                       className={`w-full px-3 py-2 border rounded ${
                         errors.studentPhone ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="12 digits"
+                      placeholder="10-12 digits"
                       maxLength={12}
                     />
                     {errors.studentPhone && (
@@ -513,30 +510,25 @@ export default function SignupPage() {
                     )}
                   </div>
 
-                  {/* Member Type */}
+                  {/* School */}
                   <div>
-                    <label htmlFor="memberType" className="block text-sm font-medium mb-1">
-                      Member Type <span className="text-red-500">*</span>
+                    <label htmlFor="school" className="block text-sm font-medium mb-1">
+                      School <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      id="memberType"
-                      value={formData.memberType ?? ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        handleInputChange('memberType', value === '' ? undefined : parseInt(value, 10));
-                      }}
+                    <input
+                      type="text"
+                      id="school"
+                      value={formData.school}
+                      onChange={(e) => handleInputChange('school', e.target.value)}
                       className={`w-full px-3 py-2 border rounded ${
-                        errors.memberType ? 'border-red-500' : 'border-gray-300'
+                        errors.school ? 'border-red-500' : 'border-gray-300'
                       }`}
-                    >
-                      <option value="">Select member type</option>
-                      <option value="1">Student</option>
-                      <option value="3">Company</option>
-                    </select>
-                    {errors.memberType && (
-                      <p className="text-red-500 text-sm mt-1">{errors.memberType}</p>
+                    />
+                    {errors.school && (
+                      <p className="text-red-500 text-sm mt-1">{errors.school}</p>
                     )}
                   </div>
+
                 </div>
               </div>
 
@@ -618,7 +610,7 @@ export default function SignupPage() {
                       className={`w-full px-3 py-2 border rounded ${
                         errors.parentPhone ? 'border-red-500' : 'border-gray-300'
                       }`}
-                      placeholder="12 digits"
+                      placeholder="10-12 digits"
                       maxLength={12}
                     />
                     {errors.parentPhone && (

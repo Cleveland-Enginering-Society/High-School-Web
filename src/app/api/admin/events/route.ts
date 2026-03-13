@@ -15,14 +15,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has admin access (user_type === 2)
+    // Check if user has admin access (user_type_table === 3 OR student with user_type === 3)
     const { data: userData, error: fetchError } = await supabase
       .from('User')
-      .select('user_type')
+      .select('user_type_table')
       .eq('id', user.id)
       .single();
 
-    if (fetchError || !userData || userData.user_type !== 2) {
+    if (fetchError || !userData) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Check if user is admin (user_type_table === 3) or student with user_type === 3
+    let isAdmin = userData.user_type_table === 3;
+    
+    if (!isAdmin && userData.user_type_table === 1) {
+      // Check if student has user_type === 3
+      const { data: studentData, error: studentError } = await supabase
+        .from('Student')
+        .select('user_type')
+        .eq('id', user.id)
+        .single();
+      
+      if (!studentError && studentData && studentData.user_type === 3) {
+        isAdmin = true;
+      }
+    }
+
+    if (!isAdmin) {
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
@@ -32,7 +55,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       eventName,
-      eventTime,
+      eventStartTime,
+      eventEndTime,
       eventLocation,
       eventDescription,
       maxUsers,
@@ -42,7 +66,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!eventName || !eventTime || !eventLocation || !eventDescription || !maxUsers || !eventWaiverInfo) {
+    if (!eventName || !eventStartTime || !eventLocation || !eventDescription || !maxUsers || !eventWaiverInfo) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -52,7 +76,8 @@ export async function POST(request: NextRequest) {
     // Prepare data for Event table
     const eventData = {
       event_name: eventName,
-      event_time: eventTime, // This should be in ISO format (YYYY-MM-DDTHH:mm:ss)
+      event_start_time: eventStartTime, // This should be in ISO format (YYYY-MM-DDTHH:mm:ss)
+      event_end_time: eventEndTime || null, // Optional end time
       event_location: eventLocation,
       event_description: eventDescription,
       max_users: maxUsers,

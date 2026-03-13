@@ -20,13 +20,15 @@ export default function Navbar() {
       const { data: { user } } = await supabase.auth.getUser();
       setIsAuthenticated(!!user);
       
-      // Check if user is admin (user_type === 2)
+      // Check if user is admin (user_type_table === 3 OR student with user_type === 3)
       if (user) {
         try {
           const response = await fetch('/api/account');
           if (response.ok) {
             const data = await response.json();
-            setIsAdmin(data.user?.user_type === 2);
+            const isAdminUser = data.user?.user_type_table === 3;
+            const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
+            setIsAdmin(isAdminUser || isAdminStudent);
           }
         } catch (error) {
           console.error('Error checking admin status:', error);
@@ -46,21 +48,23 @@ export default function Navbar() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       setIsAuthenticated(!!session);
       
-      // Re-check admin status on auth change
-      if (session?.user) {
-        try {
-          const response = await fetch('/api/account');
-          if (response.ok) {
-            const data = await response.json();
-            setIsAdmin(data.user?.user_type === 2);
+          // Re-check admin status on auth change
+          if (session?.user) {
+            try {
+              const response = await fetch('/api/account');
+              if (response.ok) {
+                const data = await response.json();
+                const isAdminUser = data.user?.user_type_table === 3;
+                const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
+                setIsAdmin(isAdminUser || isAdminStudent);
+              }
+            } catch (error) {
+              console.error('Error checking admin status:', error);
+              setIsAdmin(false);
+            }
+          } else {
+            setIsAdmin(false);
           }
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
     });
 
     return () => {

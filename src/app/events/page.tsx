@@ -8,7 +8,8 @@ import Link from 'next/link';
 interface Event {
   id: string;
   event_name: string;
-  event_time: string;
+  event_start_time: string;
+  event_end_time: string | null;
   event_location: string;
   event_description: string;
   max_users: number;
@@ -40,7 +41,9 @@ export default function EventsPage() {
           const response = await fetch('/api/account');
           if (response.ok) {
             const data = await response.json();
-            setIsAdmin(data.user?.user_type === 2);
+            const isAdminUser = data.user?.user_type_table === 3;
+            const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
+            setIsAdmin(isAdminUser || isAdminStudent);
           }
         } catch (error) {
           console.error('Error checking admin status:', error);
@@ -145,10 +148,11 @@ export default function EventsPage() {
                   
                   <div className="space-y-2 mb-4 flex-1">
                     <p className="text-gray-600">
-                      <span className="font-medium">Date:</span> {formatDate(event.event_time)}
+                      <span className="font-medium">Date:</span> {formatDate(event.event_start_time)}
                     </p>
                     <p className="text-gray-600">
-                      <span className="font-medium">Time:</span> {formatTime(event.event_time)}
+                      <span className="font-medium">Time:</span> {formatTime(event.event_start_time)}
+                      {event.event_end_time && ` - ${formatTime(event.event_end_time)}`}
                     </p>
                     <p className="text-gray-600">
                       <span className="font-medium">Location:</span> {event.event_location}

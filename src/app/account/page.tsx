@@ -15,7 +15,7 @@ interface FormData {
   parentLastName: string;
   parentEmail: string;
   parentPhone: number | undefined;
-  memberType: number | undefined;
+  school: string;
   photoMediaRelease: boolean | undefined;
   studentSignature: string;
   studentDate: Date | undefined;
@@ -34,7 +34,7 @@ interface FormErrors {
   parentLastName?: string;
   parentEmail?: string;
   parentPhone?: string;
-  memberType?: string;
+  school?: string;
   photoMediaRelease?: string;
   studentSignature?: string;
   studentDate?: string;
@@ -61,7 +61,7 @@ export default function AccountPage() {
     parentLastName: '',
     parentEmail: '',
     parentPhone: undefined,
-    memberType: undefined,
+    school: '',
     photoMediaRelease: undefined,
     studentSignature: '',
     studentDate: undefined,
@@ -104,13 +104,13 @@ export default function AccountPage() {
           parentLastName: data.user.parent_last_name || '',
           parentEmail: data.user.parent_email || '',
           parentPhone: data.user.parent_phone || undefined,
-          memberType: data.user.user_type || undefined,
+          school: data.user.school || '',
           photoMediaRelease: data.user.photo_release ?? undefined,
-          studentSignature: data.user.student_participation_sign ? 'Signed' : '',
+          studentSignature: data.user.student_participation_sign || '',
           studentDate: data.user.student_participation_date 
             ? new Date(data.user.student_participation_date + 'T00:00:00')
             : undefined,
-          parentSignature: data.user.parent_participation_sign ? 'Signed' : '',
+          parentSignature: data.user.parent_participation_sign || '',
           parentDate: data.user.parent_participation_date 
             ? new Date(data.user.parent_participation_date + 'T00:00:00')
             : undefined,
@@ -132,7 +132,9 @@ export default function AccountPage() {
 
   const validatePhone = (phone: number | undefined): boolean => {
     if (phone === undefined) return true; // Optional field
-    return phone.toString().length === 12;
+    // Phone must be between 10 and 12 digits
+    const phoneLength = phone.toString().length;
+    return phoneLength >= 10 && phoneLength <= 12;
   };
 
   const validateGrade = (grade: number | undefined): boolean => {
@@ -192,7 +194,7 @@ export default function AccountPage() {
       newErrors.studentGrade = 'Grade must be between 9 and 12';
     }
     if (formData.studentPhone !== undefined && !validatePhone(formData.studentPhone)) {
-      newErrors.studentPhone = 'Phone number must be exactly 12 digits';
+      newErrors.studentPhone = 'Phone number must be between 10 and 12 digits';
     }
 
     if (!formData.parentFirstName.trim()) {
@@ -207,11 +209,10 @@ export default function AccountPage() {
       newErrors.parentEmail = 'Please enter a valid email address';
     }
     if (formData.parentPhone !== undefined && !validatePhone(formData.parentPhone)) {
-      newErrors.parentPhone = 'Phone number must be exactly 12 digits';
+      newErrors.parentPhone = 'Phone number must be between 10 and 12 digits';
     }
-
-    if (formData.memberType === undefined) {
-      newErrors.memberType = 'Member type is required';
+    if (!formData.school.trim()) {
+      newErrors.school = 'School is required';
     }
 
     setErrors(newErrors);
@@ -291,7 +292,7 @@ export default function AccountPage() {
         parentLastName: formData.parentLastName,
         parentEmail: formData.parentEmail,
         parentPhone: formData.parentPhone,
-        memberType: formData.memberType,
+        school: formData.school,
       };
 
       // Only include password if it's been changed
@@ -339,14 +340,6 @@ export default function AccountPage() {
       const updateData: any = {
         photoMediaRelease: formData.photoMediaRelease,
       };
-
-      // Only include dates if they're provided
-      if (formData.studentDate) {
-        updateData.studentDate = formData.studentDate;
-      }
-      if (formData.parentDate) {
-        updateData.parentDate = formData.parentDate;
-      }
 
       const response = await fetch('/api/account', {
         method: 'PUT',
@@ -531,7 +524,7 @@ export default function AccountPage() {
                     className={`w-full px-3 py-2 border rounded ${
                       errors.studentPhone ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="12 digits"
+                    placeholder="10-12 digits"
                     maxLength={12}
                   />
                   {errors.studentPhone && (
@@ -539,28 +532,22 @@ export default function AccountPage() {
                   )}
                 </div>
 
-                {/* Member Type */}
+                {/* School */}
                 <div>
-                  <label htmlFor="memberType" className="block text-sm font-medium mb-1">
-                    Member Type <span className="text-red-500">*</span>
+                  <label htmlFor="school" className="block text-sm font-medium mb-1">
+                    School <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    id="memberType"
-                    value={formData.memberType ?? ''}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      handleInputChange('memberType', value === '' ? undefined : parseInt(value, 10));
-                    }}
+                  <input
+                    type="text"
+                    id="school"
+                    value={formData.school}
+                    onChange={(e) => handleInputChange('school', e.target.value)}
                     className={`w-full px-3 py-2 border rounded ${
-                      errors.memberType ? 'border-red-500' : 'border-gray-300'
+                      errors.school ? 'border-red-500' : 'border-gray-300'
                     }`}
-                  >
-                    <option value="">Select member type</option>
-                    <option value="1">Student</option>
-                    <option value="3">Company</option>
-                  </select>
-                  {errors.memberType && (
-                    <p className="text-red-500 text-sm mt-1">{errors.memberType}</p>
+                  />
+                  {errors.school && (
+                    <p className="text-red-500 text-sm mt-1">{errors.school}</p>
                   )}
                 </div>
               </div>
@@ -644,7 +631,7 @@ export default function AccountPage() {
                     className={`w-full px-3 py-2 border rounded ${
                       errors.parentPhone ? 'border-red-500' : 'border-gray-300'
                     }`}
-                    placeholder="12 digits"
+                    placeholder="10-12 digits"
                     maxLength={12}
                   />
                   {errors.parentPhone && (
@@ -799,23 +786,22 @@ export default function AccountPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.studentSignature || 'Not signed'}
+                    value={formData.studentSignature ? `${formData.studentSignature} (Signed)` : 'Not signed'}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
                   />
                 </div>
 
-                {/* Student Date - Editable */}
+                {/* Student Date - Read Only */}
                 <div>
-                  <label htmlFor="studentDate" className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium mb-1">
                     Student Date
                   </label>
                   <input
                     type="date"
-                    id="studentDate"
                     value={formatDateForInput(formData.studentDate)}
-                    onChange={(e) => handleDateChange('studentDate', e.target.value)}
-                    className="w-full px-3 py-2 border rounded border-gray-300"
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
                   />
                 </div>
 
@@ -826,23 +812,22 @@ export default function AccountPage() {
                   </label>
                   <input
                     type="text"
-                    value={formData.parentSignature || 'Not signed'}
+                    value={formData.parentSignature ? `${formData.parentSignature} (Signed)` : 'Not signed'}
                     readOnly
                     className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
                   />
                 </div>
 
-                {/* Parent Date - Editable */}
+                {/* Parent Date - Read Only */}
                 <div>
-                  <label htmlFor="parentDate" className="block text-sm font-medium mb-1">
+                  <label className="block text-sm font-medium mb-1">
                     Parent Date
                   </label>
                   <input
                     type="date"
-                    id="parentDate"
                     value={formatDateForInput(formData.parentDate)}
-                    onChange={(e) => handleDateChange('parentDate', e.target.value)}
-                    className="w-full px-3 py-2 border rounded border-gray-300"
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
                   />
                 </div>
               </div>

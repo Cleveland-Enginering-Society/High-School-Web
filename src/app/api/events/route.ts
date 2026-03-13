@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const { data: events, error: fetchError } = await supabase
       .from('Event')
       .select('*')
-      .order('event_time', { ascending: true });
+      .order('event_start_time', { ascending: true });
 
     if (fetchError) {
       return NextResponse.json(
