@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Kanit } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import AuthDebug from "@/components/AuthDebug";
 
 const inter = Inter({ subsets: ["latin"] });
+const kanit = Kanit({ subsets: ["latin"], weight: ["400"] });
 
 export const metadata: Metadata = {
   title: "CES High School Chapter",
@@ -22,6 +24,7 @@ export default function RootLayout({
         <AuthDebug />
         <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );

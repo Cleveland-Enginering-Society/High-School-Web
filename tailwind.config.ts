@@ -12,6 +12,10 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        'custom-blue': '#00549e',
+      },
+      fontFamily: {
+        'kanit': ['Kanit', 'sans-serif'],
       },
     },
   },

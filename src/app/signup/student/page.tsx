@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { InfoTooltip } from '@/components/InfoTooltip';
 
 interface FormData {
   studentEmail: string;
@@ -43,7 +42,7 @@ interface FormErrors {
   parentDate?: string;
 }
 
-export default function SignupPage() {
+export default function StudentSignupPage() {
   const router = useRouter();
   const supabase = createClient();
   const [currentPage, setCurrentPage] = useState(1);
@@ -383,7 +382,12 @@ export default function SignupPage() {
                   <div>
                     <label htmlFor="studentEmail" className="block text-sm font-medium mb-1">
                       Student Email <span className="text-red-500">*</span>
-                      <InfoTooltip description="This email is used to sign in to your account." id="student-email-tooltip" />
+                      <span className="relative inline-block ml-2 group">
+                        <span className="text-gray-500 cursor-help">(?)</span>
+                        <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                          The student email is used for logging in to the account
+                        </span>
+                      </span>
                     </label>
                     <input
                       type="email"
@@ -840,4 +844,3 @@ export default function SignupPage() {
     </div>
   );
 }
-

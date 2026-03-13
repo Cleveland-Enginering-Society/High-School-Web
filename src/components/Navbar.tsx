@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -11,6 +11,10 @@ export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSignupDropdownOpen, setIsSignupDropdownOpen] = useState(false);
+  const [isSignupDropdownPinned, setIsSignupDropdownPinned] = useState(false);
+  const [isMobileSignupDropdownOpen, setIsMobileSignupDropdownOpen] = useState(false);
+  const signupDropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -72,12 +76,26 @@ export default function Navbar() {
     };
   }, [supabase.auth]);
 
+  // Close signup dropdown when clicking outside (desktop)
+  useEffect(() => {
+    if (!isSignupDropdownOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (signupDropdownRef.current && !signupDropdownRef.current.contains(e.target as Node)) {
+        setIsSignupDropdownOpen(false);
+        setIsSignupDropdownPinned(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isSignupDropdownOpen]);
+
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
+    setIsMobileSignupDropdownOpen(false);
   };
 
   const handleLogout = async () => {
@@ -89,7 +107,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="flex items-center justify-between w-full p-10 translate-x-5">
+      <nav className="flex items-center justify-between w-full p-10">
         {/* Logo - Left side */}
         <Link href="/" className="flex items-center">
           <Image
@@ -103,40 +121,73 @@ export default function Navbar() {
 
         {/* Desktop Navigation - Right side */}
         {!isLoading && (
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-8 ml-16">
             {isAuthenticated ? (
               <>
-                <Link href="/account" className="text-base">
+                <Link href="/account" className="text-base font-semibold">
                   Account
                 </Link>
-                <Link href="/events" className="text-base">
+                <Link href="/events" className="text-base font-semibold">
                   Events
                 </Link>
-                <Link href="/about" className="text-base">
+                <Link href="/about" className="text-base font-semibold">
                   About 
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
                 >
                   Logout
                 </button>
               </>
             ) : (
               <>
-                <Link href="/company" className="text-base">
+                <Link href="/company" className="text-base font-semibold">
                   Company
                 </Link>
-                <Link href="/login" className="text-base">
+                <Link href="/login" className="text-base font-semibold">
                   Login
                 </Link>
-                <Link href="/signup" className="text-base">
-                  Signup
-                </Link>
-                <Link href="/events" className="text-base">
+                <div
+                  ref={signupDropdownRef}
+                  className="relative flex items-center h-full"
+                  onMouseEnter={() => setIsSignupDropdownOpen(true)}
+                  onMouseLeave={() => { if (!isSignupDropdownPinned) setIsSignupDropdownOpen(false); }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!isSignupDropdownOpen) {
+                        setIsSignupDropdownOpen(true);
+                        setIsSignupDropdownPinned(true);
+                      } else if (isSignupDropdownPinned) {
+                        setIsSignupDropdownOpen(false);
+                        setIsSignupDropdownPinned(false);
+                      } else {
+                        setIsSignupDropdownPinned(true);
+                      }
+                    }}
+                    className="text-base font-semibold bg-transparent border-none cursor-pointer p-0"
+                  >
+                    Signup
+                  </button>
+                  {isSignupDropdownOpen && (
+                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 pt-3 z-10">
+                      <div className="bg-white border border-black px-6 py-2 rounded shadow-lg min-w-40">
+                        <Link href="/signup/student" className="block py-1 hover:bg-gray-100 text-center font-semibold" onClick={() => { setIsSignupDropdownOpen(false); setIsSignupDropdownPinned(false); }}>
+                          Student
+                        </Link>
+                        <Link href="/signup/company" className="block py-1 hover:bg-gray-100 text-center font-semibold" onClick={() => { setIsSignupDropdownOpen(false); setIsSignupDropdownPinned(false); }}>
+                          Company
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <Link href="/events" className="text-base font-kanit text-black font-semibold">
                   Events
                 </Link>
-                <Link href="/about" className="text-base">
+                <Link href="/about" className="text-base font-kanit text-black font-semibold">
                   About 
                 </Link>
               </>
@@ -179,34 +230,34 @@ export default function Navbar() {
                   <Link
                     href="/company"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                   Company
                   </Link>
                   <Link
                     href="/account"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     Account
                   </Link>
                   <Link
                     href="/events"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     Events
                   </Link>
                   <Link
                     href="/about"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     About 
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+                    className="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
                   >
                     Logout
                   </button>
@@ -216,28 +267,50 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     Login
                   </Link>
-                  <Link
-                    href="/signup"
-                    onClick={closeMobileMenu}
-                    className="text-xl"
-                  >
-                    Signup
-                  </Link>
+                  <div className="flex flex-col items-center gap-4">
+                    <button
+                      onClick={() => setIsMobileSignupDropdownOpen(!isMobileSignupDropdownOpen)}
+                      className="text-xl font-semibold flex items-center gap-2"
+                    >
+                      Signup
+                      <span className={`transform transition-transform ${isMobileSignupDropdownOpen ? 'rotate-180' : ''}`}>
+                        ▼
+                      </span>
+                    </button>
+                    {isMobileSignupDropdownOpen && (
+                      <div className="flex flex-col gap-3 items-center">
+                        <Link
+                          href="/signup/student"
+                          onClick={closeMobileMenu}
+                          className="text-lg font-medium px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          Student
+                        </Link>
+                        <Link
+                          href="/signup/company"
+                          onClick={closeMobileMenu}
+                          className="text-lg font-medium px-4 py-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
+                        >
+                          Company
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                   <Link
                     href="/events"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     Events
                   </Link>
                   <Link
                     href="/about"
                     onClick={closeMobileMenu}
-                    className="text-xl"
+                    className="text-xl font-semibold"
                   >
                     About
                   </Link>

@@ -53,7 +53,7 @@ export default function LoginPage() {
           {/* Email Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium mb-1">
-              Student Email <span className="text-red-500">*</span>
+              Student or Main Contact Email <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
@@ -113,7 +113,7 @@ export default function LoginPage() {
           {/* Sign Up Link */}
           <div className="text-center pt-4 border-t border-gray-300">
             <p className="text-sm text-gray-600">
-              <p>{"Don't have an account?"}</p>
+              Don&apos;t have an account?{' '}
               <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
                 Sign up
               </Link>
