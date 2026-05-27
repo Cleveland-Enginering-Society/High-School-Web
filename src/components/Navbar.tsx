@@ -7,14 +7,37 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { resolveNavbarAuth } from '@/lib/clientSession';
 
-function DropdownChevron({ open }: { open: boolean }) {
+function DropdownChevron({ open, className = '' }: { open: boolean; className?: string }) {
   return (
     <span
-      className={`inline-block text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+      className={`inline-block text-xs transition-transform duration-200 ${open ? 'rotate-180' : ''} ${className}`}
       aria-hidden
     >
       ▼
     </span>
+  );
+}
+
+/** Mobile menu: invisible chevron balances the visible one so the label stays screen-centered. */
+function MobileMenuDropdownTrigger({
+  label,
+  open,
+  onClick,
+}: {
+  label: string;
+  open: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="text-xl font-semibold inline-flex items-center justify-center gap-2"
+    >
+      <DropdownChevron open={open} className="invisible" />
+      <span>{label}</span>
+      <DropdownChevron open={open} />
+    </button>
   );
 }
 
@@ -394,13 +417,11 @@ export default function Navbar() {
                 <>
                   {isAdmin && (
                     <div className="flex flex-col items-center gap-4">
-                      <button
+                      <MobileMenuDropdownTrigger
+                        label="Admins"
+                        open={isMobileAdminDropdownOpen}
                         onClick={() => setIsMobileAdminDropdownOpen(!isMobileAdminDropdownOpen)}
-                        className="text-xl font-semibold flex items-center gap-2"
-                      >
-                        Admins
-                        <DropdownChevron open={isMobileAdminDropdownOpen} />
-                      </button>
+                      />
                       {isMobileAdminDropdownOpen && (
                         <div className="flex flex-col gap-3 items-center">
                           <Link
@@ -437,13 +458,13 @@ export default function Navbar() {
                   )}
                   {isCompany && (
                     <div className="flex flex-col items-center gap-4">
-                      <button
-                        onClick={() => setIsMobileCompanyDropdownOpen(!isMobileCompanyDropdownOpen)}
-                        className="text-xl font-semibold flex items-center gap-2"
-                      >
-                        Company
-                        <DropdownChevron open={isMobileCompanyDropdownOpen} />
-                      </button>
+                      <MobileMenuDropdownTrigger
+                        label="Company"
+                        open={isMobileCompanyDropdownOpen}
+                        onClick={() =>
+                          setIsMobileCompanyDropdownOpen(!isMobileCompanyDropdownOpen)
+                        }
+                      />
                       {isMobileCompanyDropdownOpen && (
                         <div className="flex flex-col gap-3 items-center">
                           <Link
@@ -502,13 +523,11 @@ export default function Navbar() {
                     Login
                   </Link>
                   <div className="flex flex-col items-center gap-4">
-                    <button
+                    <MobileMenuDropdownTrigger
+                      label="Signup"
+                      open={isMobileSignupDropdownOpen}
                       onClick={() => setIsMobileSignupDropdownOpen(!isMobileSignupDropdownOpen)}
-                      className="text-xl font-semibold flex items-center gap-2"
-                    >
-                      Signup
-                      <DropdownChevron open={isMobileSignupDropdownOpen} />
-                    </button>
+                    />
                     {isMobileSignupDropdownOpen && (
                       <div className="flex flex-col gap-3 items-center">
                         <Link
