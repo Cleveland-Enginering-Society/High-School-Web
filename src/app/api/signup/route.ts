@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { USER_TYPE_TABLE, STUDENT_USER_TYPE } from '@/lib/userTypes';
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,10 +30,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // First, insert into User table with user_type_table = 1 (Student)
     const userData = {
       id: authData.user.id,
-      user_type_table: 1, // Student
+      user_type_table: USER_TYPE_TABLE.STUDENT,
       is_active: true,
     };
 
@@ -55,25 +55,21 @@ export async function POST(request: NextRequest) {
       student_email: formData.studentEmail,
       student_grade: formData.studentGrade,
       student_phone: formData.studentPhone || null,
-      school: formData.school || null,
+      school: formData.school,
       parent_first_name: formData.parentFirstName,
       parent_last_name: formData.parentLastName,
       parent_email: formData.parentEmail,
       parent_phone: formData.parentPhone || null,
-      user_type: formData.memberType || 1, // Default to 1 (Student) if not provided
+      user_type: formData.memberType || STUDENT_USER_TYPE.MEMBER,
       photo_release: formData.photoMediaRelease,
-      student_participation_sign: formData.studentSignature || null, // Store signature text
-      parent_participation_sign: formData.parentSignature || null, // Store signature text
-      student_participation_date: formData.studentDate 
-        ? (typeof formData.studentDate === 'string' 
-          ? formData.studentDate.split('T')[0] 
-          : new Date(formData.studentDate).toISOString().split('T')[0])
-        : null,
-      parent_participation_date: formData.parentDate 
-        ? (typeof formData.parentDate === 'string' 
-          ? formData.parentDate.split('T')[0] 
-          : new Date(formData.parentDate).toISOString().split('T')[0])
-        : null,
+      student_participation_sign: formData.studentSignature, // required in schema & form
+      parent_participation_sign: formData.parentSignature,   // required in schema & form
+      student_participation_date: typeof formData.studentDate === 'string'
+        ? formData.studentDate.split('T')[0]
+        : new Date(formData.studentDate).toISOString().split('T')[0],
+      parent_participation_date: typeof formData.parentDate === 'string'
+        ? formData.parentDate.split('T')[0]
+        : new Date(formData.parentDate).toISOString().split('T')[0],
     };
 
     // Insert data into Student table

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { isEmailNotConfirmedAuthError } from '@/lib/authEmailConfirmation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -35,6 +36,10 @@ export default function LoginPage() {
     });
 
     if (error) {
+      if (isEmailNotConfirmedAuthError(error.message)) {
+        router.push(`/confirm-email?email=${encodeURIComponent(email.trim())}`);
+        return;
+      }
       setError(error.message);
       setIsLoading(false);
       return;

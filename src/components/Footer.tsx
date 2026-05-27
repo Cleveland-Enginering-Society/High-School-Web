@@ -54,10 +54,18 @@ export default function Footer() {
                     </li>
                     <li>
                       <a
-                        href="/signup"
+                        href="/signup/student"
                         className="hover:underline"
                       >
-                        Signup
+                        Student Signup
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        href="/signup/company"
+                        className="hover:underline"
+                      >
+                        Company Signup
                       </a>
                     </li>
                     <li>
@@ -148,10 +156,18 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="/signup"
+                    href="/signup/student"
                     className="hover:underline"
                   >
-                    Signup
+                    Student Signup
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/signup/company"
+                    className="hover:underline"
+                  >
+                    Company Signup
                   </a>
                 </li>
                 <li>

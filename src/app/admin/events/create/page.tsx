@@ -1,8 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isAdminProfile } from '@/lib/roles';
+import {
+  AdminTourRequest,
+  buildInitialEventFormFromTourRequest,
+} from '@/lib/adminTourRequest';
+import {
+  TourRequestCompanyReference,
+  TourRequestScheduleReference,
+  TourRequestRequirementsReference,
+  getTourRequestCompany,
+} from '@/components/admin/TourRequestEventReference';
 
 interface FormData {
   eventName: string;
@@ -31,7 +42,23 @@ interface FormErrors {
 }
 
 export default function CreateEventPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <p>Loading...</p>
+        </div>
+      }
+    >
+      <CreateEventForm />
+    </Suspense>
+  );
+}
+
+function CreateEventForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tourRequestId = searchParams.get('tourRequestId');
   const supabase = createClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -50,17 +77,16 @@ export default function CreateEventPage() {
     eventWaiverParent: '',
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [tourRequest, setTourRequest] = useState<AdminTourRequest | null>(null);
 
   useEffect(() => {
-    // Check if user is authenticated and has user_type === 2 (admin)
-    const checkAuth = async () => {
+    const checkAuthAndLoadTourRequest = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
       }
 
-      // Fetch user data to check user_type
       const response = await fetch('/api/account');
       if (!response.ok) {
         router.push('/login');
@@ -68,18 +94,34 @@ export default function CreateEventPage() {
       }
 
       const data = await response.json();
-      const isAdminUser = data.user?.user_type_table === 3;
-      const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
-      if (!isAdminUser && !isAdminStudent) {
-        // User doesn't have admin access, redirect to home
+      if (!isAdminProfile(data.user ?? {})) {
         router.push('/');
         return;
       }
 
+      if (tourRequestId) {
+        const tourResponse = await fetch(`/api/admin/tour-requests/${tourRequestId}`);
+        if (tourResponse.ok) {
+          const tourData = await tourResponse.json();
+          const request = tourData.tourRequest as AdminTourRequest;
+          setTourRequest(request);
+
+          const initial = buildInitialEventFormFromTourRequest(request);
+          setFormData((prev) => ({
+            ...prev,
+            eventName: initial.eventName,
+            eventDate: initial.eventDate,
+            eventStartTime: initial.eventStartTime,
+            eventLocation: initial.eventLocation,
+            maxUsers: initial.maxUsers,
+          }));
+        }
+      }
+
       setIsLoading(false);
     };
-    checkAuth();
-  }, [router, supabase.auth]);
+    checkAuthAndLoadTourRequest();
+  }, [router, supabase.auth, tourRequestId]);
 
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -202,12 +244,25 @@ export default function CreateEventPage() {
     );
   }
 
+  const tourRequestCompany = tourRequest ? getTourRequestCompany(tourRequest) : null;
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">Create Event</h1>
+        <h1 className={`text-2xl md:text-3xl font-bold ${tourRequest ? 'mb-2' : 'mb-6'}`}>
+          Create Event
+        </h1>
+        {tourRequest && (
+          <p className="text-gray-600 mb-6">
+            Creating an event from a company tour request. Reference details from the request are shown below.
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {tourRequestCompany && (
+            <TourRequestCompanyReference company={tourRequestCompany} />
+          )}
+
           {/* Event Name */}
           <div>
             <label htmlFor="eventName" className="block text-sm font-medium mb-1">
@@ -226,6 +281,8 @@ export default function CreateEventPage() {
               <p className="text-red-500 text-sm mt-1">{errors.eventName}</p>
             )}
           </div>
+
+          {tourRequest && <TourRequestScheduleReference request={tourRequest} />}
 
           {/* Event Date and Time */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -364,6 +421,8 @@ export default function CreateEventPage() {
 
           {/* Separator Line */}
           <div className="border-t border-gray-300 my-6"></div>
+
+          {tourRequest && <TourRequestRequirementsReference request={tourRequest} />}
 
           {/* Event Waiver Info */}
           <div>

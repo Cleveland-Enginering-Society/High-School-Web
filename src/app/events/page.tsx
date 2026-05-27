@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { isAdminProfile, isCompanyProfile } from '@/lib/roles';
+import {
+  getAccountStatusInfo,
+  getEventSignupBlockedMessage,
+  isEventSignupDisabled,
+} from '@/lib/accountAccess';
+import AccountStatusBanner from '@/components/account/AccountStatusBanner';
 
 interface Event {
   id: string;
@@ -26,8 +33,15 @@ export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isCompany, setIsCompany] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [eventSignupDisabled, setEventSignupDisabled] = useState(false);
+  const [accountStatus, setAccountStatus] = useState(getAccountStatusInfo({}));
+  const [accountAccessFields, setAccountAccessFields] = useState<{
+    user_type_table?: number;
+    is_active?: boolean;
+  }>({});
 
   useEffect(() => {
     const checkAuthAndLoadEvents = async () => {
@@ -41,9 +55,18 @@ export default function EventsPage() {
           const response = await fetch('/api/account');
           if (response.ok) {
             const data = await response.json();
-            const isAdminUser = data.user?.user_type_table === 3;
-            const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
-            setIsAdmin(isAdminUser || isAdminStudent);
+            const user = data.user ?? {};
+            setIsAdmin(isAdminProfile(user));
+            setIsCompany(isCompanyProfile(user));
+            const access = {
+              user_type_table: user.user_type_table as number | undefined,
+              is_active: user.is_active as boolean | undefined,
+            };
+            setAccountAccessFields(access);
+            setEventSignupDisabled(
+              data.eventSignupDisabled ?? isEventSignupDisabled(access)
+            );
+            setAccountStatus(data.accountStatus ?? getAccountStatusInfo(access));
           }
         } catch (error) {
           console.error('Error checking admin status:', error);
@@ -127,7 +150,26 @@ export default function EventsPage() {
               Create Event
             </Link>
           )}
+          {isCompany && (
+            <Link
+              href="/company/tour-request"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+            >
+              Create Tour Request
+            </Link>
+          )}
         </div>
+
+        {isAuthenticated && eventSignupDisabled && (
+          <AccountStatusBanner
+            status={{
+              ...accountStatus,
+              message:
+                getEventSignupBlockedMessage(accountAccessFields) ??
+                accountStatus.message,
+            }}
+          />
+        )}
 
         {events.length === 0 ? (
           <div className="bg-white rounded-lg border border-gray-300 p-8 text-center">
@@ -181,17 +223,28 @@ export default function EventsPage() {
                   <div className="flex flex-col gap-2 mt-auto">
                     <button
                       onClick={() => handleSignup(event.id)}
-                      disabled={!isAuthenticated && openSpaces === 0}
+                      disabled={
+                        (!isAuthenticated && openSpaces === 0) ||
+                        (isAuthenticated &&
+                          !isRegistered &&
+                          (eventSignupDisabled || openSpaces === 0))
+                      }
                       className={`w-full px-4 py-2 rounded transition-colors ${
-                        openSpaces > 0
-                          ? 'bg-blue-500 text-white hover:bg-blue-600'
-                          : 'bg-red-200 text-red-700'
+                        isAuthenticated && !isRegistered && eventSignupDisabled
+                          ? 'bg-gray-300 text-gray-600 cursor-not-allowed'
+                          : openSpaces > 0 || isRegistered
+                            ? 'bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed'
+                            : 'bg-red-200 text-red-700 cursor-not-allowed'
                       }`}
                     >
-                      {isAuthenticated 
-                        ? (isRegistered 
+                      {isAuthenticated
+                        ? isRegistered
                           ? 'View Details'
-                          : (openSpaces > 0 ? 'Signup' : 'Full'))
+                          : eventSignupDisabled
+                            ? 'Signup unavailable'
+                            : openSpaces > 0
+                              ? 'Signup'
+                              : 'Full'
                         : 'View Details'}
                     </button>
                     

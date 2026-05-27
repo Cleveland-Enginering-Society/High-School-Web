@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { isAdminProfile } from '@/lib/roles';
+import {
+  getAccountStatusInfo,
+  getEventSignupBlockedMessage,
+  isEventSignupDisabled,
+} from '@/lib/accountAccess';
+import AccountStatusBanner from '@/components/account/AccountStatusBanner';
 
 interface Event {
   id: string;
@@ -36,6 +43,12 @@ export default function EventSignupPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [eventSignupDisabled, setEventSignupDisabled] = useState(false);
+  const [accountStatus, setAccountStatus] = useState(getAccountStatusInfo({}));
+  const [accountAccessFields, setAccountAccessFields] = useState<{
+    user_type_table?: number;
+    is_active?: boolean;
+  }>({});
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [formData, setFormData] = useState({
     studentSignature: '',
@@ -74,9 +87,19 @@ export default function EventSignupPage() {
           const accountResponse = await fetch('/api/account');
           if (accountResponse.ok) {
             const accountData = await accountResponse.json();
-            const isAdminUser = accountData.user?.user_type_table === 3;
-            const isAdminStudent = accountData.user?.user_type_table === 1 && accountData.user?.user_type === 3;
-            setIsAdmin(isAdminUser || isAdminStudent);
+            const user = accountData.user ?? {};
+            const access = {
+              user_type_table: user.user_type_table as number | undefined,
+              is_active: user.is_active as boolean | undefined,
+            };
+            setAccountAccessFields(access);
+            setIsAdmin(isAdminProfile(user));
+            setEventSignupDisabled(
+              accountData.eventSignupDisabled ?? isEventSignupDisabled(access)
+            );
+            setAccountStatus(
+              accountData.accountStatus ?? getAccountStatusInfo(access)
+            );
           }
         } catch (error) {
           console.error('Error checking admin status:', error);
@@ -424,6 +447,17 @@ export default function EventSignupPage() {
           {isAuthenticated ? `Signup for ${event.event_name}` : event.event_name}
         </h1>
 
+        {isAuthenticated && eventSignupDisabled && !isAlreadyRegistered && (
+          <AccountStatusBanner
+            status={{
+              ...accountStatus,
+              message:
+                getEventSignupBlockedMessage(accountAccessFields) ??
+                accountStatus.message,
+            }}
+          />
+        )}
+
         <div className="space-y-2 mb-6">
           <p className="text-gray-600">
             <span className="font-medium">Date:</span> {formatDate(event.event_start_time)}
@@ -477,6 +511,12 @@ export default function EventSignupPage() {
             {/* Acknowledgment & Signature */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-4">Acknowledgment & Signature</h3>
+              {eventSignupDisabled && !isAlreadyRegistered && (
+                <p className="text-sm text-gray-600 mb-4">
+                  Registration fields are disabled until your account is eligible for event
+                  signups.
+                </p>
+              )}
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Student Signature */}
@@ -489,9 +529,9 @@ export default function EventSignupPage() {
                     id="studentSignature"
                     value={formData.studentSignature}
                     onChange={(e) => handleInputChange('studentSignature', e.target.value)}
-                    disabled={isAlreadyRegistered}
+                    disabled={isAlreadyRegistered || eventSignupDisabled}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered
+                      isAlreadyRegistered || eventSignupDisabled
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.studentSignature
                         ? 'border-red-500'
@@ -513,9 +553,9 @@ export default function EventSignupPage() {
                     id="studentDate"
                     value={formatDateForInput(formData.studentDate)}
                     onChange={(e) => handleDateChange('studentDate', e.target.value)}
-                    disabled={isAlreadyRegistered}
+                    disabled={isAlreadyRegistered || eventSignupDisabled}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered
+                      isAlreadyRegistered || eventSignupDisabled
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.studentDate
                         ? 'border-red-500'
@@ -551,9 +591,9 @@ export default function EventSignupPage() {
                     id="parentSignature"
                     value={formData.parentSignature}
                     onChange={(e) => handleInputChange('parentSignature', e.target.value)}
-                    disabled={isAlreadyRegistered}
+                    disabled={isAlreadyRegistered || eventSignupDisabled}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered
+                      isAlreadyRegistered || eventSignupDisabled
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.parentSignature
                         ? 'border-red-500'
@@ -575,9 +615,9 @@ export default function EventSignupPage() {
                     id="parentDate"
                     value={formatDateForInput(formData.parentDate)}
                     onChange={(e) => handleDateChange('parentDate', e.target.value)}
-                    disabled={isAlreadyRegistered}
+                    disabled={isAlreadyRegistered || eventSignupDisabled}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered
+                      isAlreadyRegistered || eventSignupDisabled
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.parentDate
                         ? 'border-red-500'
@@ -620,7 +660,12 @@ export default function EventSignupPage() {
                             });
                           }
                         }}
-                        disabled={isParentFull || hasParentRegistered || isAlreadyRegistered}
+                        disabled={
+                          isParentFull ||
+                          hasParentRegistered ||
+                          isAlreadyRegistered ||
+                          eventSignupDisabled
+                        }
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
                       <label htmlFor="registerParent" className="ml-2 text-sm font-medium">
@@ -642,7 +687,7 @@ export default function EventSignupPage() {
                             id="parentName"
                             value={formData.parentName}
                             onChange={(e) => handleInputChange('parentName', e.target.value)}
-                            disabled={isAlreadyRegistered}
+                            disabled={isAlreadyRegistered || eventSignupDisabled}
                             className={`w-full px-3 py-2 border rounded ${
                               isAlreadyRegistered
                                 ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
@@ -666,7 +711,7 @@ export default function EventSignupPage() {
                             id="parentCompany"
                             value={formData.parentCompany}
                             onChange={(e) => handleInputChange('parentCompany', e.target.value)}
-                            disabled={isAlreadyRegistered}
+                            disabled={isAlreadyRegistered || eventSignupDisabled}
                             className={`w-full px-3 py-2 border rounded ${
                               isAlreadyRegistered
                                 ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
@@ -736,18 +781,20 @@ export default function EventSignupPage() {
             ) : (
               <button
                 onClick={handleSignup}
-                disabled={isSubmitting || isFull}
+                disabled={isSubmitting || isFull || eventSignupDisabled}
                 className={`px-6 py-2 rounded transition-colors ${
-                  isFull
+                  isFull || eventSignupDisabled
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
               >
                 {isSubmitting
                   ? 'Signing up...'
-                  : isFull
-                  ? 'Event Full'
-                  : 'Sign Up for Event'}
+                  : eventSignupDisabled
+                    ? 'Signup unavailable'
+                    : isFull
+                      ? 'Event Full'
+                      : 'Sign Up for Event'}
               </button>
             )}
           </div>

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { buildHostOptions } from '@/lib/hostOptions';
+import { USER_TYPE_TABLE } from '@/lib/userTypes';
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     const userData = {
       id: authData.user.id,
-      user_type_table: 3, // Company
+      user_type_table: USER_TYPE_TABLE.COMPANY,
       is_active: true,
     };
 
@@ -45,15 +47,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build host_options array for jsonb; "Other" becomes "Other: [text]" when they specify
-    let hostOptions: string[] = [];
-    if (Array.isArray(formData.hostOptions) && formData.hostOptions.length > 0) {
-      const otherSpecify = formData.hostOptionsOther?.trim();
-      hostOptions = formData.hostOptions
-        .filter((o: string) => o !== 'Other')
-        .concat(formData.hostOptions.includes('Other') ? [otherSpecify ? `Other: ${otherSpecify}` : 'Other'] : []);
-    }
-    const hostOptionsValue = hostOptions.length > 0 ? hostOptions : null;
+    const hostOptionsValue = buildHostOptions(formData.hostOptions, formData.hostOptionsOther);
 
     const companyData = {
       id: authData.user.id,
@@ -63,11 +57,17 @@ export async function POST(request: NextRequest) {
       contact_first_name: formData.contactFirstName,
       contact_last_name: formData.contactLastName,
       contact_email: formData.contactEmail,
-      contact_phone: formData.contactPhone ?? null,
+      contact_phone:
+        formData.contactPhone === undefined || formData.contactPhone === null || formData.contactPhone === ''
+          ? null
+          : String(formData.contactPhone),
       secondary_first_name: formData.secondaryFirstName?.trim() || null,
       secondary_last_name: formData.secondaryLastName?.trim() || null,
       secondary_email: formData.secondaryEmail?.trim() || null,
-      secondary_phone: formData.secondaryPhone ?? null,
+      secondary_phone:
+        formData.secondaryPhone === undefined || formData.secondaryPhone === null || formData.secondaryPhone === ''
+          ? null
+          : String(formData.secondaryPhone),
       host_options: hostOptionsValue,
     };
 

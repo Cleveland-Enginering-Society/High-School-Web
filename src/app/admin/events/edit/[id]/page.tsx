@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { isAdminProfile } from '@/lib/roles';
 
 interface FormData {
   eventName: string;
@@ -56,7 +57,7 @@ export default function EditEventPage() {
   const [errors, setErrors] = useState<FormErrors>({});
 
   useEffect(() => {
-    // Check if user is authenticated and has user_type === 2 (admin)
+    // Check if user is authenticated and has admin access
     const checkAuthAndLoadEvent = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -72,9 +73,7 @@ export default function EditEventPage() {
       }
 
       const data = await response.json();
-      const isAdminUser = data.user?.user_type_table === 3;
-      const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
-      if (!isAdminUser && !isAdminStudent) {
+      if (!isAdminProfile(data.user ?? {})) {
         // User doesn't have admin access, redirect to home
         router.push('/');
         return;

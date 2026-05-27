@@ -3,6 +3,16 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { USER_TYPE_TABLE } from '@/lib/userTypes';
+import CompanyAccountForm from '@/components/account/CompanyAccountForm';
+import AdminAccountForm from '@/components/account/AdminAccountForm';
+import PendingAdminAccountView from '@/components/account/PendingAdminAccountView';
+import AccountStatusBanner from '@/components/account/AccountStatusBanner';
+import { getAccountStatusInfo } from '@/lib/accountAccess';
+import {
+  ACCOUNT_REVOKED_CODE,
+  clearStaleAuthSession,
+} from '@/lib/clientSession';
 
 interface FormData {
   studentEmail: string;
@@ -69,6 +79,8 @@ export default function AccountPage() {
     parentDate: undefined,
   });
   const [errors, setErrors] = useState<FormErrors>({});
+  const [userTypeTable, setUserTypeTable] = useState<number | null>(null);
+  const [profileData, setProfileData] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     // Redirect if not authenticated
@@ -88,33 +100,48 @@ export default function AccountPage() {
     try {
       const response = await fetch('/api/account');
       if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        if (
+          response.status === 401 ||
+          (data as { code?: string }).code === ACCOUNT_REVOKED_CODE
+        ) {
+          await clearStaleAuthSession(supabase);
+          router.push('/login');
+          return;
+        }
         throw new Error('Failed to load account data');
       }
       const data = await response.json();
       
       if (data.user) {
-        setFormData({
-          studentEmail: data.user.student_email || '',
-          password: '', // Don't load password
-          studentFirstName: data.user.student_first_name || '',
-          studentLastName: data.user.student_last_name || '',
-          studentGrade: data.user.student_grade || undefined,
-          studentPhone: data.user.student_phone || undefined,
-          parentFirstName: data.user.parent_first_name || '',
-          parentLastName: data.user.parent_last_name || '',
-          parentEmail: data.user.parent_email || '',
-          parentPhone: data.user.parent_phone || undefined,
-          school: data.user.school || '',
-          photoMediaRelease: data.user.photo_release ?? undefined,
-          studentSignature: data.user.student_participation_sign || '',
-          studentDate: data.user.student_participation_date 
-            ? new Date(data.user.student_participation_date + 'T00:00:00')
-            : undefined,
-          parentSignature: data.user.parent_participation_sign || '',
-          parentDate: data.user.parent_participation_date 
-            ? new Date(data.user.parent_participation_date + 'T00:00:00')
-            : undefined,
-        });
+        const type = data.user.user_type_table as number;
+        setUserTypeTable(type);
+        setProfileData(data.user);
+
+        if (type === USER_TYPE_TABLE.STUDENT) {
+          setFormData({
+            studentEmail: data.user.student_email || '',
+            password: '',
+            studentFirstName: data.user.student_first_name || '',
+            studentLastName: data.user.student_last_name || '',
+            studentGrade: data.user.student_grade || undefined,
+            studentPhone: data.user.student_phone || undefined,
+            parentFirstName: data.user.parent_first_name || '',
+            parentLastName: data.user.parent_last_name || '',
+            parentEmail: data.user.parent_email || '',
+            parentPhone: data.user.parent_phone || undefined,
+            school: data.user.school || '',
+            photoMediaRelease: data.user.photo_release ?? undefined,
+            studentSignature: data.user.student_participation_sign || '',
+            studentDate: data.user.student_participation_date 
+              ? new Date(data.user.student_participation_date + 'T00:00:00')
+              : undefined,
+            parentSignature: data.user.parent_participation_sign || '',
+            parentDate: data.user.parent_participation_date 
+              ? new Date(data.user.parent_participation_date + 'T00:00:00')
+              : undefined,
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -375,10 +402,68 @@ export default function AccountPage() {
     );
   }
 
+  if (userTypeTable === USER_TYPE_TABLE.COMPANY && profileData) {
+    const companyStatus = getAccountStatusInfo(
+      profileData as { user_type_table?: number; is_active?: boolean }
+    );
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">Company Account Settings</h1>
+          <AccountStatusBanner status={companyStatus} />
+          <CompanyAccountForm initialData={profileData} />
+        </div>
+      </div>
+    );
+  }
+
+  if (userTypeTable === USER_TYPE_TABLE.ADMIN && profileData) {
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">Admin Account Settings</h1>
+          <AdminAccountForm initialData={profileData} />
+        </div>
+      </div>
+    );
+  }
+
+  if (userTypeTable === USER_TYPE_TABLE.ADMIN_REQUEST && profileData) {
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">Account</h1>
+          <PendingAdminAccountView profile={profileData} />
+        </div>
+      </div>
+    );
+  }
+
+  if (userTypeTable !== USER_TYPE_TABLE.STUDENT) {
+    return (
+      <div className="min-h-screen p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">Account</h1>
+          {updateError && (
+            <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded">{updateError}</div>
+          )}
+          {!updateError && <p className="text-gray-600">Unable to load account information.</p>}
+        </div>
+      </div>
+    );
+  }
+
+  const studentStatus = profileData
+    ? getAccountStatusInfo(
+        profileData as { user_type_table?: number; is_active?: boolean }
+      )
+    : getAccountStatusInfo({});
+
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-2xl md:text-3xl font-bold mb-6">Account Settings</h1>
+        <AccountStatusBanner status={studentStatus} />
 
         {/* Progress indicator */}
         <div className="mb-8 flex items-center gap-2">

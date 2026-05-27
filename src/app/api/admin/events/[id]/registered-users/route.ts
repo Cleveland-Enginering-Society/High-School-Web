@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkIsAdmin } from '@/lib/roles';
+import { USER_TYPE_TABLE } from '@/lib/userTypes';
 
 // GET - Fetch registered users for an event
 export async function GET(
@@ -19,37 +21,7 @@ export async function GET(
       );
     }
 
-    // Check if user has admin access (user_type_table === 3 OR student with user_type === 3)
-    const { data: userData, error: fetchError } = await supabase
-      .from('User')
-      .select('user_type_table')
-      .eq('id', user.id)
-      .single();
-
-    if (fetchError || !userData) {
-      return NextResponse.json(
-        { error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    // Check if user is admin (user_type_table === 3) or student with user_type === 3
-    let isAdmin = userData.user_type_table === 3;
-    
-    if (!isAdmin && userData.user_type_table === 1) {
-      // Check if student has user_type === 3
-      const { data: studentData, error: studentError } = await supabase
-        .from('Student')
-        .select('user_type')
-        .eq('id', user.id)
-        .single();
-      
-      if (!studentError && studentData && studentData.user_type === 3) {
-        isAdmin = true;
-      }
-    }
-
-    if (!isAdmin) {
+    if (!(await checkIsAdmin(supabase, user.id))) {
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
@@ -116,8 +88,8 @@ export async function GET(
       userTypeMap.set(ut.id, ut.user_type_table);
     });
 
-    // Fetch student data for users with user_type_table === 1
-    const studentIds = userTypes?.filter(ut => ut.user_type_table === 1).map(ut => ut.id) || [];
+    // Fetch student data for student accounts
+    const studentIds = userTypes?.filter(ut => ut.user_type_table === USER_TYPE_TABLE.STUDENT).map(ut => ut.id) || [];
     let students: any[] = [];
     if (studentIds.length > 0) {
       const { data: studentData, error: studentError } = await supabase

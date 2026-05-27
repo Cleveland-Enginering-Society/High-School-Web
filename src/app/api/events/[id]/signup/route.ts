@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { getEventSignupBlockForUser } from '@/lib/accountAccess';
 
 // GET - Fetch registration data for the current user
 export async function GET(
@@ -66,6 +67,11 @@ export async function POST(
         { error: 'Unauthorized. Please log in to sign up for events.' },
         { status: 401 }
       );
+    }
+
+    const signupBlockMessage = await getEventSignupBlockForUser(supabase, user.id);
+    if (signupBlockMessage) {
+      return NextResponse.json({ error: signupBlockMessage }, { status: 403 });
     }
 
     const { id: eventId } = await params;

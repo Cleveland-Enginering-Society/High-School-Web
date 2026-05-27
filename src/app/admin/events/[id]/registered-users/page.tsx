@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import { isAdminProfile } from '@/lib/roles';
 
 interface RegisteredUser {
   id: string;
@@ -50,9 +51,7 @@ export default function RegisteredUsersPage() {
         }
 
         const data = await response.json();
-        const isAdminUser = data.user?.user_type_table === 3;
-        const isAdminStudent = data.user?.user_type_table === 1 && data.user?.user_type === 3;
-        if (!isAdminUser && !isAdminStudent) {
+        if (!isAdminProfile(data.user ?? {})) {
           router.push('/');
           return;
         }

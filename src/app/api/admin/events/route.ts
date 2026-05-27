@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkIsAdmin } from '@/lib/roles';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,37 +16,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has admin access (user_type_table === 3 OR student with user_type === 3)
-    const { data: userData, error: fetchError } = await supabase
-      .from('User')
-      .select('user_type_table')
-      .eq('id', user.id)
-      .single();
-
-    if (fetchError || !userData) {
-      return NextResponse.json(
-        { error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    // Check if user is admin (user_type_table === 3) or student with user_type === 3
-    let isAdmin = userData.user_type_table === 3;
-    
-    if (!isAdmin && userData.user_type_table === 1) {
-      // Check if student has user_type === 3
-      const { data: studentData, error: studentError } = await supabase
-        .from('Student')
-        .select('user_type')
-        .eq('id', user.id)
-        .single();
-      
-      if (!studentError && studentData && studentData.user_type === 3) {
-        isAdmin = true;
-      }
-    }
-
-    if (!isAdmin) {
+    if (!(await checkIsAdmin(supabase, user.id))) {
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
