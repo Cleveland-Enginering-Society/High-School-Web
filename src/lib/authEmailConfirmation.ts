@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export function getAuthEmailRedirectUrl(origin: string): string {

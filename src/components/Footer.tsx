@@ -1,12 +1,14 @@
+// Written by Evan Dan
+
 export default function Footer() {
   return (
     <section className="bg-[#0f2f4f] py-20">
       {/* Desktop Footer */}
       <div className="hidden md:block">
-        <div className="max-w-7xl ml-6 mr-auto px-6">
-          <div className="flex flex-col md:flex-row items-center gap-16 min-h-[200px]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-16 min-h-[200px]">
             {/* Logo Section */}
-            <div className="flex-shrink-0 mr-12">
+            <div className="flex-shrink-0">
               <img
                 src="/CES White Logo.webp"
                 alt="CES Logo"
@@ -15,7 +17,7 @@ export default function Footer() {
             </div>
 
             {/* Content Section */}
-            <div className="flex-1 grid grid-cols-3 items-start text-white gap-8">
+            <div className="grid grid-cols-3 items-start text-white gap-8 lg:gap-12">
               {/* COLUMN 1 — Organization Info - Left */}
               <div className="min-w-0 flex justify-center">
                 <div className="max-w-xs">
@@ -205,6 +207,13 @@ export default function Footer() {
             </div>
           </div>
         </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 mt-12 pt-8 border-t border-white/20 text-center text-white/80 text-sm space-y-1">
+        <p>
+          © {new Date().getFullYear()} Cleveland Engineering Society High School Chapter
+        </p>
+        <p>Website design + build by Evan Dan and Iris Li</p>
       </div>
     </section>
   );

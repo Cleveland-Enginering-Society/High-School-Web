@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 /** Options for host_options (select all that apply). Stored as jsonb array. */
 export const HOST_OPTION_LABELS = [
   'Provide job shadowing opportunities',

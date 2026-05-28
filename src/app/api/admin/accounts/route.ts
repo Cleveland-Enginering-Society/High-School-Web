@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkIsAdmin } from '@/lib/roles';

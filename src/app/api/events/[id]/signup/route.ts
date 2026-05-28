@@ -1,6 +1,9 @@
+// Written by Evan Dan
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getEventSignupBlockForUser } from '@/lib/accountAccess';
+import { EVENT_STATUS, normalizeEventStatus } from '@/lib/eventStatus';
 
 // GET - Fetch registration data for the current user
 export async function GET(
@@ -105,6 +108,13 @@ export async function POST(
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404 }
+      );
+    }
+
+    if (normalizeEventStatus(event.status) !== EVENT_STATUS.ONGOING) {
+      return NextResponse.json(
+        { error: 'Registration is closed for this event' },
+        { status: 400 }
       );
     }
 
@@ -264,6 +274,13 @@ export async function DELETE(
       return NextResponse.json(
         { error: 'Event not found' },
         { status: 404 }
+      );
+    }
+
+    if (normalizeEventStatus(event.status) !== EVENT_STATUS.ONGOING) {
+      return NextResponse.json(
+        { error: 'Registration cannot be canceled for this event' },
+        { status: 400 }
       );
     }
 

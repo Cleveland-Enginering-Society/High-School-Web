@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { createBrowserClient } from "@supabase/ssr";
 
 export function createClient() {

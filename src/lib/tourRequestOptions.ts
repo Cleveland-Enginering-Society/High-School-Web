@@ -1,3 +1,7 @@
+// Written by Evan Dan
+
+import { combineLocalDateAndTimeToISO } from '@/lib/eventDateTime';
+
 /** Weekday options for tour availability (Mon–Sat). */
 export const TOUR_DAY_OPTIONS = [
   'Monday',
@@ -44,12 +48,7 @@ export function buildDateOptions(
 ): string[] | null {
   const timestamps = rows
     .filter((row) => row.date && row.time)
-    .map((row) => {
-      const [year, month, day] = row.date.split('-').map(Number);
-      const [hours, minutes] = row.time.split(':').map(Number);
-      const localDate = new Date(year, month - 1, day, hours, minutes, 0);
-      return localDate.toISOString();
-    });
+    .map((row) => combineLocalDateAndTimeToISO(row.date, row.time));
 
   return timestamps.length > 0 ? timestamps : null;
 }

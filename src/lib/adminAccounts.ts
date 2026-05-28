@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { companyMatchesHostOptionFilters } from '@/lib/hostOptions';
 import { STUDENT_USER_TYPE, USER_TYPE_TABLE } from '@/lib/userTypes';
 

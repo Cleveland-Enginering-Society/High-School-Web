@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';

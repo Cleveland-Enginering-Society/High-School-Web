@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import type { Metadata } from "next";
 import { Inter, Kanit } from "next/font/google";
 import "./globals.css";
@@ -19,11 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className="h-full">
+      <body className={`${inter.className} min-h-full flex flex-col`}>
         <AuthDebug />
         <Navbar />
-        {children}
+        <main className="flex-1">{children}</main>
         <Footer />
       </body>
     </html>

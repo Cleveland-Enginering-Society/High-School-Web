@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 /**
  * Account type stored on public."User".user_type_table.
  * Determines which profile table holds the user's data (Student, Admin, or Company).

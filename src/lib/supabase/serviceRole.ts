@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 
 /** Server-only client for auth.admin operations (create/delete users). */

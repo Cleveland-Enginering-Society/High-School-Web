@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 

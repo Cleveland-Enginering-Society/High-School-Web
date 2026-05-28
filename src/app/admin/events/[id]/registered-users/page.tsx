@@ -1,10 +1,18 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 import { isAdminProfile } from '@/lib/roles';
+import {
+  collectParentEmails,
+  collectSignupEmails,
+  formatEmailsForClipboard,
+} from '@/lib/eventRegisteredUsers';
 
 interface RegisteredUser {
   id: string;
@@ -111,20 +119,19 @@ export default function RegisteredUsersPage() {
   };
 
   const copyStudentEmails = async () => {
-    const emails = registeredUsers
-      .map((user) => user.studentEmail)
-      .filter((email) => email)
-      .join(', ');
-    
-    if (!emails) {
+    const emails = collectSignupEmails(registeredUsers);
+
+    if (emails.length === 0) {
       setCopySuccess('No student emails to copy');
       setTimeout(() => setCopySuccess(null), 2000);
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(emails);
-      setCopySuccess('Student emails copied to clipboard!');
+      await navigator.clipboard.writeText(formatEmailsForClipboard(emails));
+      setCopySuccess(
+        `Copied ${emails.length} student email${emails.length === 1 ? '' : 's'} to clipboard!`
+      );
       setTimeout(() => setCopySuccess(null), 2000);
     } catch (error) {
       setCopySuccess('Failed to copy emails');
@@ -133,20 +140,19 @@ export default function RegisteredUsersPage() {
   };
 
   const copyParentEmails = async () => {
-    const emails = registeredUsers
-      .map((user) => user.parentEmail)
-      .filter((email) => email)
-      .join(', ');
-    
-    if (!emails) {
+    const emails = collectParentEmails(registeredUsers);
+
+    if (emails.length === 0) {
       setCopySuccess('No parent emails to copy');
       setTimeout(() => setCopySuccess(null), 2000);
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(emails);
-      setCopySuccess('Parent emails copied to clipboard!');
+      await navigator.clipboard.writeText(formatEmailsForClipboard(emails));
+      setCopySuccess(
+        `Copied ${emails.length} parent email${emails.length === 1 ? '' : 's'} to clipboard!`
+      );
       setTimeout(() => setCopySuccess(null), 2000);
     } catch (error) {
       setCopySuccess('Failed to copy emails');

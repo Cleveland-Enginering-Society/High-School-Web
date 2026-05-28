@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -14,6 +17,8 @@ import {
 
 interface CompanyProfile {
   company_name?: string;
+  industry?: string;
+  company_location?: string;
   contact_first_name?: string;
   contact_last_name?: string;
   contact_email?: string;
@@ -30,13 +35,74 @@ interface DateTimeRow {
   time: string;
 }
 
+interface CompanyInfoForm {
+  companyName: string;
+  industry: string;
+  companyLocation: string;
+  contactFirstName: string;
+  contactLastName: string;
+  contactEmail: string;
+  contactPhone: string;
+  secondaryFirstName: string;
+  secondaryLastName: string;
+  secondaryEmail: string;
+  secondaryPhone: string;
+}
+
 interface FormErrors {
+  companyName?: string;
+  industry?: string;
+  companyLocation?: string;
+  contactFirstName?: string;
+  contactLastName?: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  secondaryEmail?: string;
+  secondaryPhone?: string;
   possibleDays?: string;
   possibleTimes?: string;
   possibleTimesOther?: string;
   dateOptions?: string;
   maxStudents?: string;
   ageRestrictions?: string;
+}
+
+const EMPTY_COMPANY_INFO: CompanyInfoForm = {
+  companyName: '',
+  industry: '',
+  companyLocation: '',
+  contactFirstName: '',
+  contactLastName: '',
+  contactEmail: '',
+  contactPhone: '',
+  secondaryFirstName: '',
+  secondaryLastName: '',
+  secondaryEmail: '',
+  secondaryPhone: '',
+};
+
+function companyInfoFromProfile(profile: CompanyProfile): CompanyInfoForm {
+  return {
+    companyName: profile.company_name || '',
+    industry: profile.industry || '',
+    companyLocation: profile.company_location || '',
+    contactFirstName: profile.contact_first_name || '',
+    contactLastName: profile.contact_last_name || '',
+    contactEmail: profile.contact_email || '',
+    contactPhone: profile.contact_phone != null ? String(profile.contact_phone) : '',
+    secondaryFirstName: profile.secondary_first_name || '',
+    secondaryLastName: profile.secondary_last_name || '',
+    secondaryEmail: profile.secondary_email || '',
+    secondaryPhone: profile.secondary_phone != null ? String(profile.secondary_phone) : '',
+  };
+}
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validatePhone(phone: string): boolean {
+  if (!phone.trim()) return true;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length >= 10 && digits.length <= 12;
 }
 
 function newDateTimeRow(date = '', time = ''): DateTimeRow {
@@ -57,7 +123,7 @@ export default function CompanyTourRequestForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [companyInfo, setCompanyInfo] = useState<CompanyInfoForm>(EMPTY_COMPANY_INFO);
   const [possibleDays, setPossibleDays] = useState<string[]>([]);
   const [possibleTimes, setPossibleTimes] = useState<string[]>([]);
   const [possibleTimesOther, setPossibleTimesOther] = useState('');
@@ -88,7 +154,7 @@ export default function CompanyTourRequestForm({
         return;
       }
 
-      setCompanyProfile(accountData.user);
+      setCompanyInfo(companyInfoFromProfile(accountData.user));
 
       if (tourRequestId) {
         const tourResponse = await fetch(`/api/company/tour-request/${tourRequestId}`);
@@ -135,8 +201,49 @@ export default function CompanyTourRequestForm({
     );
   };
 
+  const updateCompanyField = (field: keyof CompanyInfoForm, value: string) => {
+    setCompanyInfo((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+
+    if (!companyInfo.companyName.trim()) {
+      newErrors.companyName = 'Company name is required';
+    }
+    if (!companyInfo.industry.trim()) {
+      newErrors.industry = 'Industry is required';
+    }
+    if (!companyInfo.companyLocation.trim()) {
+      newErrors.companyLocation = 'Company location is required';
+    }
+    if (!companyInfo.contactFirstName.trim()) {
+      newErrors.contactFirstName = 'Contact first name is required';
+    }
+    if (!companyInfo.contactLastName.trim()) {
+      newErrors.contactLastName = 'Contact last name is required';
+    }
+    if (!companyInfo.contactEmail.trim()) {
+      newErrors.contactEmail = 'Contact email is required';
+    } else if (!emailRegex.test(companyInfo.contactEmail.trim())) {
+      newErrors.contactEmail = 'Please enter a valid email address';
+    }
+    if (!validatePhone(companyInfo.contactPhone)) {
+      newErrors.contactPhone = 'Phone number must be between 10 and 12 digits';
+    }
+    if (companyInfo.secondaryEmail.trim() && !emailRegex.test(companyInfo.secondaryEmail.trim())) {
+      newErrors.secondaryEmail = 'Please enter a valid email address';
+    }
+    if (!validatePhone(companyInfo.secondaryPhone)) {
+      newErrors.secondaryPhone = 'Phone number must be between 10 and 12 digits';
+    }
 
     if (possibleDays.length === 0) {
       newErrors.possibleDays = 'Please select at least one day';
@@ -190,6 +297,30 @@ export default function CompanyTourRequestForm({
     };
 
     try {
+      const accountResponse = await fetch('/api/account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          companyName: companyInfo.companyName.trim(),
+          industry: companyInfo.industry.trim(),
+          companyLocation: companyInfo.companyLocation.trim(),
+          contactFirstName: companyInfo.contactFirstName.trim(),
+          contactLastName: companyInfo.contactLastName.trim(),
+          contactEmail: companyInfo.contactEmail.trim(),
+          contactPhone: companyInfo.contactPhone.trim() || null,
+          secondaryFirstName: companyInfo.secondaryFirstName.trim(),
+          secondaryLastName: companyInfo.secondaryLastName.trim(),
+          secondaryEmail: companyInfo.secondaryEmail.trim(),
+          secondaryPhone: companyInfo.secondaryPhone.trim() || null,
+        }),
+      });
+
+      const accountData = await accountResponse.json();
+      if (!accountResponse.ok) {
+        setSubmitError(accountData.error || 'Failed to update company information');
+        return;
+      }
+
       const response = await fetch(
         isEditing
           ? `/api/company/tour-request/${tourRequestId}`
@@ -248,21 +379,65 @@ export default function CompanyTourRequestForm({
         </h1>
         <p className="text-gray-600 mb-8">
           {isEditing
-            ? 'Update your industry tour hosting request.'
-            : 'Submit a request to host an industry tour. Company and contact information below is pulled from your account.'}
+            ? 'Update your company profile and tour hosting request below. Company and contact changes are saved to your account.'
+            : 'Submit a request to host an industry tour. You can update your company and contact information below before submitting.'}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Company Information</h2>
-            <div>
-              <label className="block text-sm font-medium mb-1">Company Name</label>
-              <input
-                type="text"
-                value={companyProfile?.company_name || ''}
-                readOnly
-                className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label htmlFor="companyName" className="block text-sm font-medium mb-1">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="companyName"
+                  value={companyInfo.companyName}
+                  onChange={(e) => updateCompanyField('companyName', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.companyName ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.companyName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.companyName}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="industry" className="block text-sm font-medium mb-1">
+                  Industry <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="industry"
+                  value={companyInfo.industry}
+                  onChange={(e) => updateCompanyField('industry', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.industry ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.industry && (
+                  <p className="text-red-500 text-sm mt-1">{errors.industry}</p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="companyLocation" className="block text-sm font-medium mb-1">
+                  Company Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="companyLocation"
+                  value={companyInfo.companyLocation}
+                  onChange={(e) => updateCompanyField('companyLocation', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.companyLocation ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                />
+                {errors.companyLocation && (
+                  <p className="text-red-500 text-sm mt-1">{errors.companyLocation}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -272,40 +447,72 @@ export default function CompanyTourRequestForm({
             <h2 className="text-xl font-semibold">Main Contact Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">First Name</label>
+                <label htmlFor="contactFirstName" className="block text-sm font-medium mb-1">
+                  First Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={companyProfile?.contact_first_name || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="contactFirstName"
+                  value={companyInfo.contactFirstName}
+                  onChange={(e) => updateCompanyField('contactFirstName', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.contactFirstName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.contactFirstName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.contactFirstName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Last Name</label>
+                <label htmlFor="contactLastName" className="block text-sm font-medium mb-1">
+                  Last Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={companyProfile?.contact_last_name || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="contactLastName"
+                  value={companyInfo.contactLastName}
+                  onChange={(e) => updateCompanyField('contactLastName', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.contactLastName ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.contactLastName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.contactLastName}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label htmlFor="contactEmail" className="block text-sm font-medium mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="email"
-                  value={companyProfile?.contact_email || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="contactEmail"
+                  value={companyInfo.contactEmail}
+                  onChange={(e) => updateCompanyField('contactEmail', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.contactEmail ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.contactEmail && (
+                  <p className="text-red-500 text-sm mt-1">{errors.contactEmail}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                <label htmlFor="contactPhone" className="block text-sm font-medium mb-1">
+                  Phone Number
+                </label>
                 <input
-                  type="text"
-                  value={companyProfile?.contact_phone || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  type="tel"
+                  id="contactPhone"
+                  value={companyInfo.contactPhone}
+                  onChange={(e) => updateCompanyField('contactPhone', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.contactPhone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.contactPhone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.contactPhone}</p>
+                )}
               </div>
             </div>
           </div>
@@ -316,40 +523,62 @@ export default function CompanyTourRequestForm({
             <h2 className="text-xl font-semibold">Secondary Contact Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">First Name</label>
+                <label htmlFor="secondaryFirstName" className="block text-sm font-medium mb-1">
+                  First Name
+                </label>
                 <input
                   type="text"
-                  value={companyProfile?.secondary_first_name || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="secondaryFirstName"
+                  value={companyInfo.secondaryFirstName}
+                  onChange={(e) => updateCompanyField('secondaryFirstName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Last Name</label>
+                <label htmlFor="secondaryLastName" className="block text-sm font-medium mb-1">
+                  Last Name
+                </label>
                 <input
                   type="text"
-                  value={companyProfile?.secondary_last_name || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="secondaryLastName"
+                  value={companyInfo.secondaryLastName}
+                  onChange={(e) => updateCompanyField('secondaryLastName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Email</label>
+                <label htmlFor="secondaryEmail" className="block text-sm font-medium mb-1">
+                  Email
+                </label>
                 <input
                   type="email"
-                  value={companyProfile?.secondary_email || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  id="secondaryEmail"
+                  value={companyInfo.secondaryEmail}
+                  onChange={(e) => updateCompanyField('secondaryEmail', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.secondaryEmail ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.secondaryEmail && (
+                  <p className="text-red-500 text-sm mt-1">{errors.secondaryEmail}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Phone Number</label>
+                <label htmlFor="secondaryPhone" className="block text-sm font-medium mb-1">
+                  Phone Number
+                </label>
                 <input
-                  type="text"
-                  value={companyProfile?.secondary_phone || ''}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-50"
+                  type="tel"
+                  id="secondaryPhone"
+                  value={companyInfo.secondaryPhone}
+                  onChange={(e) => updateCompanyField('secondaryPhone', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded ${
+                    errors.secondaryPhone ? 'border-red-500' : 'border-gray-300'
+                  }`}
                 />
+                {errors.secondaryPhone && (
+                  <p className="text-red-500 text-sm mt-1">{errors.secondaryPhone}</p>
+                )}
               </div>
             </div>
           </div>

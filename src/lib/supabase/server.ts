@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 

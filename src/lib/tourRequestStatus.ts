@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 /** Values stored on public."Tour_Request".request_status */
 export const TOUR_REQUEST_STATUS = {
   ONGOING: 'ongoing',

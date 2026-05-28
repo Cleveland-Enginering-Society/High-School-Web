@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { Pool } from 'pg';
 
 // Create a connection pool

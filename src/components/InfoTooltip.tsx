@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useRef, useEffect } from 'react';
 
 interface InfoTooltipProps {

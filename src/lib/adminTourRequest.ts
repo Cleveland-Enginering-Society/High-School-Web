@@ -1,3 +1,7 @@
+// Written by Evan Dan
+
+import { splitLocalDateTimeFromISO } from '@/lib/eventDateTime';
+
 export function parseTourRequestId(id: string): number | null {
   const parsed = Number(id);
   if (!Number.isInteger(parsed) || parsed <= 0) return null;
@@ -95,16 +99,7 @@ export function parseFirstDateOption(iso: string | undefined): {
   eventStartTime: string;
 } {
   if (!iso) return { eventDate: '', eventStartTime: '' };
-  const d = new Date(iso);
-  const eventDate = [
-    d.getFullYear(),
-    String(d.getMonth() + 1).padStart(2, '0'),
-    String(d.getDate()).padStart(2, '0'),
-  ].join('-');
-  const eventStartTime = [
-    String(d.getHours()).padStart(2, '0'),
-    String(d.getMinutes()).padStart(2, '0'),
-  ].join(':');
+  const { date: eventDate, time: eventStartTime } = splitLocalDateTimeFromISO(iso);
   return { eventDate, eventStartTime };
 }
 

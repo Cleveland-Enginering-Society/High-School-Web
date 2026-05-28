@@ -1,9 +1,19 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
+import {
+  EVENT_STATUS,
+  eventStatusBadgeClass,
+  getEventDisplayLabelFromEvent,
+  isEventSignupOpen,
+  normalizeEventStatus,
+} from '@/lib/eventStatus';
 import { isAdminProfile } from '@/lib/roles';
 import {
   getAccountStatusInfo,
@@ -25,6 +35,7 @@ interface Event {
   event_waiver_parent: string | null;
   registered_list: string[];
   parent_list: string[];
+  status?: string | null;
 }
 
 export default function EventSignupPage() {
@@ -175,6 +186,9 @@ export default function EventSignupPage() {
           throw new Error('Failed to load event');
         }
         const data = await response.json();
+        if (typeof data.isAdmin === 'boolean') {
+          setIsAdmin(data.isAdmin);
+        }
         const foundEvent = data.events?.find((e: Event) => e.id === eventId);
         
         if (!foundEvent) {
@@ -439,23 +453,53 @@ export default function EventSignupPage() {
   const isParentFull = openParentSpaces === 0;
   const isAlreadyRegistered = userId ? (event.registered_list?.includes(userId) || false) : false;
   const hasParentRegistered = userId ? (event.parent_list?.includes(userId) || false) : false;
+  const eventStatus = normalizeEventStatus(event.status);
+  const isSignupOpen = isEventSignupOpen(eventStatus);
+  const canRegister = isSignupOpen && !eventSignupDisabled && !isAlreadyRegistered;
+  const isFormLocked = isAlreadyRegistered || eventSignupDisabled || !isSignupOpen;
+  const statusLabel = getEventDisplayLabelFromEvent(event);
+  const eventAccessMessage = getEventSignupBlockedMessage(accountAccessFields);
 
   return (
     <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold mb-6">
-          {isAuthenticated ? `Signup for ${event.event_name}` : event.event_name}
-        </h1>
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold">
+            {canRegister ? `Signup for ${event.event_name}` : event.event_name}
+          </h1>
+          {eventStatus !== EVENT_STATUS.ONGOING && (
+            <span
+              className={`inline-block px-2.5 py-0.5 text-xs font-semibold rounded border ${eventStatusBadgeClass(statusLabel)}`}
+            >
+              {statusLabel}
+            </span>
+          )}
+        </div>
+
+        {!isSignupOpen && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded">
+            {eventStatus === EVENT_STATUS.PAST
+              ? 'This event has ended. Registration is closed.'
+              : 'This event has been dismissed.'}
+          </div>
+        )}
 
         {isAuthenticated && eventSignupDisabled && !isAlreadyRegistered && (
-          <AccountStatusBanner
-            status={{
-              ...accountStatus,
-              message:
-                getEventSignupBlockedMessage(accountAccessFields) ??
-                accountStatus.message,
-            }}
-          />
+          accountStatus.variant ? (
+            <AccountStatusBanner
+              status={{
+                ...accountStatus,
+                message: eventAccessMessage ?? accountStatus.message,
+              }}
+            />
+          ) : eventAccessMessage ? (
+            <div
+              className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg"
+              role="status"
+            >
+              <p className="text-sm leading-relaxed">{eventAccessMessage}</p>
+            </div>
+          ) : null
         )}
 
         <div className="space-y-2 mb-6">
@@ -489,8 +533,8 @@ export default function EventSignupPage() {
           )}
         </div>
 
-        {/* Waiver Information - For authenticated users */}
-        {isAuthenticated && (
+        {/* Waiver Information - For students signing up or already registered */}
+        {isAuthenticated && (isAlreadyRegistered || canRegister) && (
           <>
             {/* Separator Line */}
             <div className="border-t border-gray-300 my-6"></div>
@@ -529,9 +573,9 @@ export default function EventSignupPage() {
                     id="studentSignature"
                     value={formData.studentSignature}
                     onChange={(e) => handleInputChange('studentSignature', e.target.value)}
-                    disabled={isAlreadyRegistered || eventSignupDisabled}
+                    disabled={isFormLocked}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered || eventSignupDisabled
+                      isFormLocked
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.studentSignature
                         ? 'border-red-500'
@@ -553,9 +597,9 @@ export default function EventSignupPage() {
                     id="studentDate"
                     value={formatDateForInput(formData.studentDate)}
                     onChange={(e) => handleDateChange('studentDate', e.target.value)}
-                    disabled={isAlreadyRegistered || eventSignupDisabled}
+                    disabled={isFormLocked}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered || eventSignupDisabled
+                      isFormLocked
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.studentDate
                         ? 'border-red-500'
@@ -591,9 +635,9 @@ export default function EventSignupPage() {
                     id="parentSignature"
                     value={formData.parentSignature}
                     onChange={(e) => handleInputChange('parentSignature', e.target.value)}
-                    disabled={isAlreadyRegistered || eventSignupDisabled}
+                    disabled={isFormLocked}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered || eventSignupDisabled
+                      isFormLocked
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.parentSignature
                         ? 'border-red-500'
@@ -615,9 +659,9 @@ export default function EventSignupPage() {
                     id="parentDate"
                     value={formatDateForInput(formData.parentDate)}
                     onChange={(e) => handleDateChange('parentDate', e.target.value)}
-                    disabled={isAlreadyRegistered || eventSignupDisabled}
+                    disabled={isFormLocked}
                     className={`w-full px-3 py-2 border rounded ${
-                      isAlreadyRegistered || eventSignupDisabled
+                      isFormLocked
                         ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                         : errors.parentDate
                         ? 'border-red-500'
@@ -663,8 +707,7 @@ export default function EventSignupPage() {
                         disabled={
                           isParentFull ||
                           hasParentRegistered ||
-                          isAlreadyRegistered ||
-                          eventSignupDisabled
+                          isFormLocked
                         }
                         className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                       />
@@ -687,9 +730,9 @@ export default function EventSignupPage() {
                             id="parentName"
                             value={formData.parentName}
                             onChange={(e) => handleInputChange('parentName', e.target.value)}
-                            disabled={isAlreadyRegistered || eventSignupDisabled}
+                            disabled={isFormLocked}
                             className={`w-full px-3 py-2 border rounded ${
-                              isAlreadyRegistered
+                              isFormLocked
                                 ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                                 : errors.parentName
                                 ? 'border-red-500'
@@ -711,9 +754,9 @@ export default function EventSignupPage() {
                             id="parentCompany"
                             value={formData.parentCompany}
                             onChange={(e) => handleInputChange('parentCompany', e.target.value)}
-                            disabled={isAlreadyRegistered || eventSignupDisabled}
+                            disabled={isFormLocked}
                             className={`w-full px-3 py-2 border rounded ${
-                              isAlreadyRegistered
+                              isFormLocked
                                 ? 'bg-gray-100 text-gray-500 border-gray-300 cursor-not-allowed'
                                 : errors.parentCompany
                                 ? 'border-red-500'
@@ -756,7 +799,7 @@ export default function EventSignupPage() {
               href="/events"
               className="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
             >
-              Cancel
+              {canRegister || isAlreadyRegistered ? 'Cancel' : 'Back to Events'}
             </Link>
             
             {isAdmin && (
@@ -770,7 +813,7 @@ export default function EventSignupPage() {
             
             {!isAdmin && <div></div>}
             
-            {isAlreadyRegistered ? (
+            {isAlreadyRegistered && isSignupOpen ? (
               <button
                 onClick={() => setShowCancelConfirm(true)}
                 disabled={isCanceling}
@@ -778,25 +821,19 @@ export default function EventSignupPage() {
               >
                 {isCanceling ? 'Canceling...' : 'Cancel Registration'}
               </button>
-            ) : (
+            ) : canRegister ? (
               <button
                 onClick={handleSignup}
-                disabled={isSubmitting || isFull || eventSignupDisabled}
+                disabled={isSubmitting || isFull}
                 className={`px-6 py-2 rounded transition-colors ${
-                  isFull || eventSignupDisabled
+                  isFull
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed'
                 }`}
               >
-                {isSubmitting
-                  ? 'Signing up...'
-                  : eventSignupDisabled
-                    ? 'Signup unavailable'
-                    : isFull
-                      ? 'Event Full'
-                      : 'Sign Up for Event'}
+                {isSubmitting ? 'Signing up...' : isFull ? 'Event Full' : 'Sign Up for Event'}
               </button>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="flex justify-between items-center">
@@ -807,12 +844,14 @@ export default function EventSignupPage() {
               Back to Events
             </Link>
             
-            <Link
-              href="/login"
-              className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
-            >
-              Login to Sign Up
-            </Link>
+            {isSignupOpen && (
+              <Link
+                href="/login"
+                className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+              >
+                Login to Sign Up
+              </Link>
+            )}
           </div>
         )}
 

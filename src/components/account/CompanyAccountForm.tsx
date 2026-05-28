@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState } from 'react';
 import { HOST_OPTION_LABELS, parseHostOptions } from '@/lib/hostOptions';
 

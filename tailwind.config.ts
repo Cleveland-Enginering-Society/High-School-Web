@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import type { Config } from "tailwindcss";
 
 const config: Config = {

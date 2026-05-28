@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';

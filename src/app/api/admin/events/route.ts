@@ -1,6 +1,9 @@
+// Written by Evan Dan
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkIsAdmin } from '@/lib/roles';
+import { EVENT_STATUS } from '@/lib/eventStatus';
 
 export async function POST(request: NextRequest) {
   try {
@@ -55,8 +58,9 @@ export async function POST(request: NextRequest) {
       max_parents: maxParents || 0,
       event_waiver_info: eventWaiverInfo,
       event_waiver_parent: eventWaiverParent || null,
-      registered_list: [], // Initialize empty array for registered users
-      parent_list: [], // Initialize empty array for registered parents
+      registered_list: [],
+      parent_list: [],
+      status: EVENT_STATUS.ONGOING,
     };
 
     // Insert data into Event table

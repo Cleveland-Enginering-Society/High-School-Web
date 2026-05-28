@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { AccountStatusInfo } from '@/lib/accountAccess';
 
 const VARIANT_STYLES = {

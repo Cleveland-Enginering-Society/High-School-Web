@@ -1,9 +1,17 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isAdminProfile } from '@/lib/roles';
+import {
+  combineLocalDateAndTimeToISO,
+  combineLocalDateAndTimeToISOOrNull,
+  splitLocalDateTimeFromISO,
+} from '@/lib/eventDateTime';
 
 interface FormData {
   eventName: string;
@@ -101,16 +109,13 @@ export default function EditEventPage() {
       const data = await response.json();
       const event = data.event;
 
-      // Parse event_start_time to separate date and time
-      const eventStartDateTime = new Date(event.event_start_time);
-      const eventDate = eventStartDateTime.toISOString().split('T')[0];
-      const eventStartTime = eventStartDateTime.toTimeString().slice(0, 5);
-      
-      // Parse event_end_time if it exists
+      const { date: eventDate, time: eventStartTime } = splitLocalDateTimeFromISO(
+        event.event_start_time
+      );
+
       let eventEndTime = '';
       if (event.event_end_time) {
-        const eventEndDateTime = new Date(event.event_end_time);
-        eventEndTime = eventEndDateTime.toTimeString().slice(0, 5);
+        eventEndTime = splitLocalDateTimeFromISO(event.event_end_time).time;
       }
 
       setFormData({
@@ -190,9 +195,14 @@ export default function EditEventPage() {
     setIsSubmitting(true);
 
     try {
-      // Combine date and time into a single datetime string
-      const eventStartDateTime = `${formData.eventDate}T${formData.eventStartTime}:00`;
-      const eventEndDateTime = formData.eventEndTime ? `${formData.eventDate}T${formData.eventEndTime}:00` : null;
+      const eventStartDateTime = combineLocalDateAndTimeToISO(
+        formData.eventDate,
+        formData.eventStartTime
+      );
+      const eventEndDateTime = combineLocalDateAndTimeToISOOrNull(
+        formData.eventDate,
+        formData.eventEndTime
+      );
       
       const response = await fetch(`/api/admin/events/${eventId}`, {
         method: 'PUT',

@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { createClient } from '@/lib/supabase/client';
 
 /**

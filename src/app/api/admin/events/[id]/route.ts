@@ -1,6 +1,9 @@
+// Written by Evan Dan
+
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkIsAdmin } from '@/lib/roles';
+import { isValidEventStatus } from '@/lib/eventStatus';
 
 // GET - Fetch a single event by ID
 export async function GET(
@@ -132,6 +135,68 @@ export async function PUT(
     return NextResponse.json({ success: true, event: data });
   } catch (error) {
     console.error('Event update error:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Update event status only
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!(await checkIsAdmin(supabase, user.id))) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { id: eventId } = await params;
+    const body = await request.json();
+    const status = typeof body.status === 'string' ? body.status.toLowerCase() : '';
+
+    if (!isValidEventStatus(status)) {
+      return NextResponse.json(
+        { error: 'Invalid status. Use "ongoing", "past", or "dismissed".' },
+        { status: 400 }
+      );
+    }
+
+    const { data, error: updateError } = await supabase
+      .from('Event')
+      .update({ status })
+      .eq('id', eventId)
+      .select('id, status')
+      .single();
+
+    if (updateError || !data) {
+      return NextResponse.json(
+        { error: updateError?.message || 'Event not found' },
+        { status: updateError ? 400 : 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      event: data,
+      message: 'Event status updated successfully',
+    });
+  } catch (error) {
+    console.error('Event status update error:', error);
     return NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }

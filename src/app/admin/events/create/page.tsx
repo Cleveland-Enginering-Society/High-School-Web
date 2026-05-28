@@ -1,5 +1,8 @@
 'use client';
 
+// Written by Evan Dan
+
+
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -8,6 +11,10 @@ import {
   AdminTourRequest,
   buildInitialEventFormFromTourRequest,
 } from '@/lib/adminTourRequest';
+import {
+  combineLocalDateAndTimeToISO,
+  combineLocalDateAndTimeToISOOrNull,
+} from '@/lib/eventDateTime';
 import {
   TourRequestCompanyReference,
   TourRequestScheduleReference,
@@ -180,9 +187,14 @@ function CreateEventForm() {
     setIsSubmitting(true);
 
     try {
-      // Combine date and time into a single datetime string
-      const eventStartDateTime = `${formData.eventDate}T${formData.eventStartTime}:00`;
-      const eventEndDateTime = formData.eventEndTime ? `${formData.eventDate}T${formData.eventEndTime}:00` : null;
+      const eventStartDateTime = combineLocalDateAndTimeToISO(
+        formData.eventDate,
+        formData.eventStartTime
+      );
+      const eventEndDateTime = combineLocalDateAndTimeToISOOrNull(
+        formData.eventDate,
+        formData.eventEndTime
+      );
       
       const response = await fetch('/api/admin/events', {
         method: 'POST',

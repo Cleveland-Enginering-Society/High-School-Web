@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface AdminRequestFormInput {

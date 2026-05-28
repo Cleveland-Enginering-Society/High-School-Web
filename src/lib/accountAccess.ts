@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { USER_TYPE_TABLE } from '@/lib/userTypes';
 
@@ -27,6 +29,12 @@ export const INACTIVE_ACCOUNT_MESSAGE =
 export const INACTIVE_ACCOUNT_EVENT_MESSAGE =
   'Event signup is unavailable because this account has been deactivated.';
 
+export const COMPANY_ACCOUNT_EVENT_MESSAGE =
+  'Event registration is for student accounts only. You can browse and view event details, but company accounts cannot sign up.';
+
+export const NON_STUDENT_ACCOUNT_EVENT_MESSAGE =
+  'Event registration is for student accounts only. You can browse and view event details.';
+
 export function isPendingAdminAccount(user: AccountAccessFields): boolean {
   return user.user_type_table === USER_TYPE_TABLE.ADMIN_REQUEST;
 }
@@ -35,8 +43,20 @@ export function isInactiveAccount(user: AccountAccessFields): boolean {
   return user.is_active === false;
 }
 
+export function isStudentAccount(user: AccountAccessFields): boolean {
+  return user.user_type_table === USER_TYPE_TABLE.STUDENT;
+}
+
+export function isNonStudentAccount(user: AccountAccessFields): boolean {
+  return user.user_type_table !== undefined && !isStudentAccount(user);
+}
+
 export function isEventSignupDisabled(user: AccountAccessFields): boolean {
-  return isPendingAdminAccount(user) || isInactiveAccount(user);
+  return (
+    isPendingAdminAccount(user) ||
+    isInactiveAccount(user) ||
+    isNonStudentAccount(user)
+  );
 }
 
 export function getAccountStatusInfo(user: AccountAccessFields): AccountStatusInfo {
@@ -69,6 +89,8 @@ export function getAccountStatusInfo(user: AccountAccessFields): AccountStatusIn
 export function getEventSignupBlockedMessage(user: AccountAccessFields): string | null {
   if (isPendingAdminAccount(user)) return PENDING_ADMIN_EVENT_MESSAGE;
   if (isInactiveAccount(user)) return INACTIVE_ACCOUNT_EVENT_MESSAGE;
+  if (user.user_type_table === USER_TYPE_TABLE.COMPANY) return COMPANY_ACCOUNT_EVENT_MESSAGE;
+  if (isNonStudentAccount(user)) return NON_STUDENT_ACCOUNT_EVENT_MESSAGE;
   return null;
 }
 

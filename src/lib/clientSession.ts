@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { isAdminProfile, isCompanyProfile } from '@/lib/roles';
 

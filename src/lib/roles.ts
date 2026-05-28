@@ -1,3 +1,5 @@
+// Written by Evan Dan
+
 import { SupabaseClient } from '@supabase/supabase-js';
 import { USER_TYPE_TABLE, STUDENT_USER_TYPE } from '@/lib/userTypes';
 
