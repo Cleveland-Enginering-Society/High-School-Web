@@ -54,6 +54,54 @@ export async function GET(
 }
 
 // PUT - Update an event
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    if (!(await checkIsAdmin(supabase, user.id))) {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    const { id: eventId } = await params;
+
+    const { error: deleteError } = await supabase
+      .from('Event')
+      .delete()
+      .eq('id', eventId);
+
+    if (deleteError) {
+      console.error('Event delete error:', deleteError);
+      return NextResponse.json(
+        { error: deleteError.message || 'Failed to delete event' },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Event delete error:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
