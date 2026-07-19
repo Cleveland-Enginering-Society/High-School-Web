@@ -122,15 +122,15 @@ export default function AdminAccountDetailPage() {
           </div>
           <p className="text-gray-600">
             {detail.user.userTypeTableLabel} account
-            {detail.accountType === 'students' &&
-              detail.profile.student_email &&
-              ` · ${String(detail.profile.student_email)}`}
-            {detail.accountType === 'companies' &&
-              detail.profile.contact_email &&
-              ` · ${String(detail.profile.contact_email)}`}
-            {detail.accountType === 'admins' &&
-              detail.profile.email &&
-              ` · ${String(detail.profile.email)}`}
+            {detail.accountType === 'students' && detail.profile?.student_email
+              ? ` · ${String(detail.profile.student_email)}`
+              : null}
+            {detail.accountType === 'companies' && detail.profile?.contact_email
+              ? ` · ${String(detail.profile.contact_email)}`
+              : null}
+            {detail.accountType === 'admins' && detail.profile?.email
+              ? ` · ${String(detail.profile.email)}`
+              : null}
           </p>
           <Link
             href={`/admin/accounts?tab=${listTab}`}
