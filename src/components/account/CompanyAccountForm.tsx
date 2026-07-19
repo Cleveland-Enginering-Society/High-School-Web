@@ -130,10 +130,10 @@ export default function CompanyAccountForm({ initialData }: CompanyAccountFormPr
 
   const handleInputChange = (field: keyof CompanyFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
+    if (errors[field as keyof typeof errors]) {
       setErrors((prev) => {
         const next = { ...prev };
-        delete next[field];
+        delete next[field as keyof typeof next];
         return next;
       });
     }

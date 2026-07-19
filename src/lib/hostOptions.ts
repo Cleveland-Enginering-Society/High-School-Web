@@ -48,7 +48,7 @@ export function parseHostOptions(stored: string[] | null | undefined): {
     } else if (entry.startsWith('Other:')) {
       if (!hostOptions.includes('Other')) hostOptions.push('Other');
       hostOptionsOther = entry.slice('Other:'.length).trim();
-    } else if (STANDARD_OPTIONS.has(entry)) {
+    } else if (STANDARD_OPTIONS.has(entry as any)) {
       hostOptions.push(entry);
     }
   }

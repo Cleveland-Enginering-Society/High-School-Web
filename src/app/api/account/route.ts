@@ -102,6 +102,10 @@ export async function GET() {
       return accountRevokedResponse('User type not supported');
     }
 
+    if (!userData) {
+      return NextResponse.json({ error: 'User data not found' }, { status: 404 });
+    }
+    
     userData.user_type_table = userTypeTable;
     userData.is_active = userTypeData?.is_active !== false;
 

@@ -71,7 +71,7 @@ export function parseTourTimeFrames(stored: string[] | null | undefined): {
     } else if (entry.startsWith('Other:')) {
       if (!possibleTimes.includes('Other')) possibleTimes.push('Other');
       possibleTimesOther = entry.slice('Other:'.length).trim();
-    } else if (STANDARD_TIME_FRAMES.has(entry)) {
+    } else if (STANDARD_TIME_FRAMES.has(entry as any)) {
       possibleTimes.push(entry);
     }
   }
