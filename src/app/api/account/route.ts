@@ -1,5 +1,6 @@
-// Written by Evan Dan
+// Written by Evan Dan and Iris Li
 
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { USER_TYPE_TABLE } from '@/lib/userTypes';
@@ -104,6 +105,10 @@ export async function GET() {
       return accountRevokedResponse('User type not supported');
     }
 
+    if (!userData) {
+      return NextResponse.json({ error: 'User data not found' }, { status: 404 });
+    }
+    
     userData.user_type_table = userTypeTable;
     userData.is_active = userTypeData?.is_active !== false;
 

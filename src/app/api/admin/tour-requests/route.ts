@@ -1,4 +1,6 @@
-// Written by Evan Dan
+// Written by Evan Dan and Iris Li
+
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
