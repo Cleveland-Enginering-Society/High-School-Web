@@ -57,6 +57,8 @@ interface FormErrors {
   contactLastName?: string;
   contactEmail?: string;
   contactPhone?: string;
+  secondaryFirstName?: string;
+  secondaryLastName?: string;
   secondaryEmail?: string;
   secondaryPhone?: string;
   possibleDays?: string;
