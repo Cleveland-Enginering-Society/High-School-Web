@@ -399,13 +399,19 @@ export default function EventsPage() {
     }
 
     try {
-      const { error } = await supabase.from('EventPictures').delete().eq('id', picture.id);
+      const res = await fetch(`/api/admin/event-pictures/${picture.id}`, {
+        method: 'DELETE',
+      });
 
-      if (error) {
-        throw error;
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to delete picture');
       }
 
       setPictures((prevPictures) => prevPictures.filter((item) => item.id !== picture.id));
+      if (data?.warning) {
+        console.warn(data.warning);
+      }
     } catch (error) {
       console.error('Error deleting picture:', error);
       alert(error instanceof Error ? error.message : 'Failed to delete picture');
