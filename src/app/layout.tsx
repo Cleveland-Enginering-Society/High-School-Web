@@ -1,5 +1,6 @@
 // Written by Evan Dan
 
+import { Analytics } from '@vercel/analytics/react';
 import type { Metadata } from "next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
@@ -23,8 +24,8 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-1">{children}</main>
         <Footer />
+        <Analytics />
       </body>
     </html>
   );
 }
-
