@@ -10,11 +10,12 @@ export async function POST(request: NextRequest) {
     const formData = await request.json();
     const supabase = await createClient();
 
+    const siteOrigin = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.contactEmail,
       password: formData.password,
       options: {
-        emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
+        emailRedirectTo: `${siteOrigin}/auth/callback`,
       },
     });
 

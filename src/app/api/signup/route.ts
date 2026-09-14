@@ -10,11 +10,12 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
 
     // Sign up the user with student email and password
+    const siteOrigin = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email: formData.studentEmail,
       password: formData.password,
       options: {
-        emailRedirectTo: `${request.nextUrl.origin}/auth/callback`,
+        emailRedirectTo: `${siteOrigin}/auth/callback`,
       },
     });
 

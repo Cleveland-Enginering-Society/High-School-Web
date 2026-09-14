@@ -135,10 +135,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: requestInsertError.message }, { status: 400 });
     }
 
+    const siteOrigin = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
     const { error: confirmationEmailError } = await sendSignupConfirmationEmail(
       serviceSupabase,
       email,
-      request.nextUrl.origin
+      siteOrigin
     );
 
     if (confirmationEmailError) {

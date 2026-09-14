@@ -20,9 +20,10 @@ export default function ForgotPasswordPage() {
     setError(null);
     setMessage(null);
 
+    const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       // CRITICAL: Redirect to callback first to establish the session
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      redirectTo: `${siteOrigin}/auth/callback?next=/reset-password`,
     });
 
     if (error) {
