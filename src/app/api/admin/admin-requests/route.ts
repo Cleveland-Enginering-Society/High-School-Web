@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: requestInsertError.message }, { status: 400 });
     }
 
-    const siteOrigin = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? request.nextUrl.origin;
+    const siteOrigin = process.env.SITE_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'https://high-school-web-eta.vercel.app';
     const { error: confirmationEmailError } = await sendSignupConfirmationEmail(
       serviceSupabase,
       email,

@@ -21,26 +21,26 @@ export default function ResetPasswordPage() {
     // `updateUser` can succeed even if the session cookie wasn't set by the
     // server callback (e.g. user opened the link in a different browser).
     const params = new URLSearchParams(window.location.search);
-    const access_token = params.get('access_token');
-    const refresh_token = params.get('refresh_token');
+    const at = params.get('access_token');
+    const rt = params.get('refresh_token');
 
-    if (access_token) {
-      // Try to set the session client-side. Ignore errors — user will see
-      // guidance below if this fails.
-      (async () => {
-        try {
-          await supabase.auth.setSession({ access_token, refresh_token });
-          setInfo('Session established from reset link. You may now set a new password.');
-          // Clean up tokens from URL for aesthetics/security
-          params.delete('access_token');
-          params.delete('refresh_token');
-          const newUrl = `${window.location.pathname}?${params.toString()}`;
-          window.history.replaceState({}, '', newUrl);
-        } catch (err) {
-          console.error('Failed to set session from reset link:', err);
-        }
-      })();
-    }
+    if (!at) return;
+
+    (async () => {
+      try {
+        const sessionPayload: any = { access_token: at };
+        if (rt) sessionPayload.refresh_token = rt;
+        await supabase.auth.setSession(sessionPayload);
+        setInfo('Session established from reset link. You may now set a new password.');
+        // Clean up tokens from URL for aesthetics/security
+        params.delete('access_token');
+        params.delete('refresh_token');
+        const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        window.history.replaceState({}, '', newUrl);
+      } catch (err) {
+        console.error('Failed to set session from reset link:', err);
+      }
+    })();
   }, [supabase.auth]);
 
   const handleUpdate = async (e: React.FormEvent) => {

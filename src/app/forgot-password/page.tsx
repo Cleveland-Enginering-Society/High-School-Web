@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
     setError(null);
     setMessage(null);
 
-    const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
+    const siteOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://high-school-web-eta.vercel.app';
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       // CRITICAL: Redirect to callback first to establish the session
       redirectTo: `${siteOrigin}/auth/callback?next=/reset-password`,
