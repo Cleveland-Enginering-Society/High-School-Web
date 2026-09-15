@@ -3,7 +3,7 @@
 // Written by Evan Dan
 
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
@@ -13,6 +13,35 @@ export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    // If the reset link includes an access token (some Supabase flows include
+    // `access_token` and `refresh_token`), set the session in the browser so
+    // `updateUser` can succeed even if the session cookie wasn't set by the
+    // server callback (e.g. user opened the link in a different browser).
+    const params = new URLSearchParams(window.location.search);
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+
+    if (access_token) {
+      // Try to set the session client-side. Ignore errors — user will see
+      // guidance below if this fails.
+      (async () => {
+        try {
+          await supabase.auth.setSession({ access_token, refresh_token });
+          setInfo('Session established from reset link. You may now set a new password.');
+          // Clean up tokens from URL for aesthetics/security
+          params.delete('access_token');
+          params.delete('refresh_token');
+          const newUrl = `${window.location.pathname}?${params.toString()}`;
+          window.history.replaceState({}, '', newUrl);
+        } catch (err) {
+          console.error('Failed to set session from reset link:', err);
+        }
+      })();
+    }
+  }, [supabase.auth]);
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +53,7 @@ export default function ResetPasswordPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(error.message ?? 'Failed to update password.');
       setLoading(false);
     } else {
       router.push('/login?message=Success! Please login with your new password.');
@@ -45,6 +74,10 @@ export default function ResetPasswordPage() {
           className="w-full rounded border p-2"
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
+        {info && <p className="text-green-600 text-sm">{info}</p>}
+        {!info && !error && (
+          <p className="text-sm text-gray-600">If the form fails, ensure you opened the reset link in the same browser used to request it, or request a new reset.</p>
+        )}
         <button disabled={loading} className="w-full rounded bg-green-600 p-2 text-white">
           {loading ? 'Updating...' : 'Update Password'}
         </button>
